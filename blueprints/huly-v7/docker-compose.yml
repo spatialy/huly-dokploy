@@ -338,6 +338,10 @@ services:
       - STATS_URL=http://stats:4900
       - LOVE_ENDPOINT=http://love:8097
       - BILLING_URL=http://billing:4042
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - OPENAI_SUMMARY_MODEL=${OPENAI_SUMMARY_MODEL:-}
+      - OPENAI_TRANSLATE_MODEL=${OPENAI_TRANSLATE_MODEL:-}
     restart: unless-stopped
 
   billing:

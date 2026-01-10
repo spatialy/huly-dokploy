@@ -44,9 +44,11 @@ echo "=== Huly V7 Nginx Entrypoint ==="
 echo "HOST_ADDRESS: $HOST_ADDRESS"
 echo "PARENT_DOMAIN: $PARENT_DOMAIN"
 
-# Patch the nginx config with actual domains for cookie rewriting
-sed -i "s/PARENT_DOMAIN_PLACEHOLDER/.$PARENT_DOMAIN/g" /etc/nginx/conf.d/default.conf
-sed -i "s/HOST_ADDRESS_PLACEHOLDER/$HOST_ADDRESS/g" /etc/nginx/conf.d/default.conf
+# Copy config to temp, edit, then copy back (avoids "Device busy" error on mounted volumes)
+cp /etc/nginx/conf.d/default.conf /tmp/nginx.conf
+sed -i "s/PARENT_DOMAIN_PLACEHOLDER/.$PARENT_DOMAIN/g" /tmp/nginx.conf
+sed -i "s/HOST_ADDRESS_PLACEHOLDER/$HOST_ADDRESS/g" /tmp/nginx.conf
+cat /tmp/nginx.conf > /etc/nginx/conf.d/default.conf
 
 echo "Nginx config patched successfully!"
 echo "Starting nginx..."

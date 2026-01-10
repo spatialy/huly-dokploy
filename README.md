@@ -274,4 +274,12 @@ MIT - Use freely!
 
 ## Credits
 
+- **Original Huly**: https://github.com/hcengineering/huly
+- **PostgreSQL Fork**: https://github.com/intabia-fusion/foundation-selfhost - This template is based on the amazing work by the intabia-fusion team who created a fork of Huly that uses PostgreSQL instead of CockroachDB. This makes self-hosting much simpler and more resource-friendly. Huge thanks! 🙏
+https://github.com/haiodo - The genius behind the fork. All Docker images used in this template (`haiodo/*`) are built by him. If you love Huly, show him support! ⭐
+
+- **Dokploy Template**: Created after 50 days of debugging to help non-developers deploy Huly without headaches
+This template was created after countless hours of debugging. If it helps you, give it a ⭐!
+
+
 This template was created after countless hours of debugging. If it helps you, give it a ⭐!

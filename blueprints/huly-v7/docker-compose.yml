@@ -5,7 +5,7 @@ services:
     ports:
       - 80
     volumes:
-      - ../files/volumes/nginx/.huly.nginx:/etc/nginx/conf.d/default.conf
+      - ../files/volumes/nginx/.huly.nginx:/etc/nginx/nginx.template:ro
       - ../files/volumes/nginx/entrypoint.sh:/entrypoint.sh
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     environment:
@@ -192,6 +192,7 @@ services:
       - FILES_URL=https://${HOST_ADDRESS}/_datalake/blob/:workspace/:blobId/:filename
       - AI_URL=https://${HOST_ADDRESS}/_ai
       - BILLING_URL=https://${HOST_ADDRESS}/_billing
+      - LIVEKIT_WS=wss://${LIVEKIT_HOST:-}
     restart: unless-stopped
 
   datalake:
@@ -313,6 +314,9 @@ services:
       - STORAGE_CONFIG=${STORAGE_CONFIG}
       - STORAGE_PROVIDER_NAME=minio
       - BILLING_URL=http://billing:4042
+      - LIVEKIT_HOST=${LIVEKIT_HOST:-}
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-devkey}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-devsecret}
     restart: unless-stopped
 
   aibot:

@@ -45,7 +45,7 @@ Now you have 2 domains:
 
 1. In Dokploy, clikc create project call it somehow like "Huly"  and clikc create.
 then clikc create service and select template.
- go to **Templates** and add this repository in the Base url filed. URL "https://raw.githubusercontent.com/shali1995/dok/main"
+ go to **Templates** and add this repository in the Base url filed. URL "https://raw.githubusercontent.com/shali1995/huly-dokploy-fucking-working/main"
 then clikc create.
 2. Select the **Huly V7** template
 3. Go to **Environment** tab and change:

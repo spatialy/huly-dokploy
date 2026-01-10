@@ -25,6 +25,11 @@ env = [
   "LIVEKIT_HOST=",
   "LIVEKIT_API_KEY=devkey",
   "LIVEKIT_API_SECRET=devsecret",
+  "# OpenAI Configuration (optional - for AI assistant)",
+  "OPENAI_API_KEY=",
+  "OPENAI_BASE_URL=",
+  "OPENAI_SUMMARY_MODEL=",
+  "OPENAI_TRANSLATE_MODEL=",
 ]
 
 [[config.domains]]

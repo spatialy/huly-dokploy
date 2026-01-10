@@ -12,7 +12,7 @@ SSH into your server and run:
 ```bash
 curl ifconfig.me
 ```
-This will show your server IP (example: `88.222.221.103`). Write it down - you'll need it.
+This will show your server IP (example: `88.222.521.3`). Write it down - you'll need it.
 
 ### Step 2: Create Free Domains
 
@@ -25,7 +25,7 @@ This will show your server IP (example: `88.222.221.103`). Write it down - you'l
 1. Under "Option 1: Use Our Domain Name", enter a name like `huly`
 2. Click **Add**
 3. Find the **IPv4 Address** field - it will have a random IP
-4. Replace it with YOUR server IP (e.g., `88.222.221.103`)
+4. Replace it with YOUR server IP (e.g., `88.222.521.3`)
 5. Click **Save**
 
 **Create LiveKit Domain:**

@@ -1,0 +1,245 @@
+[variables]
+main_domain = "${domain}"
+huly_secret = "${base64:64}"
+postgres_password = "${password:32}"
+redpanda_password = "${password:16}"
+
+[config]
+env = [
+  "HULY_VERSION=v0.7.315",
+  "DOCKER_NAME=huly_v7",
+  "HOST_ADDRESS=${main_domain}",
+  "SECRET=${huly_secret}",
+  "TITLE=Huly",
+  "DEFAULT_LANGUAGE=en",
+  "LAST_NAME_FIRST=true",
+  "POSTGRES_DB=huly",
+  "POSTGRES_USER=huly",
+  "POSTGRES_PASSWORD=${postgres_password}",
+  "CR_DB_URL=postgres://huly:${postgres_password}@postgres:5432/huly",
+  "STORAGE_CONFIG=minio|minio?accessKey=minioadmin&secretKey=minioadmin",
+  "REDPANDA_ADMIN_USER=admin",
+  "REDPANDA_ADMIN_PWD=${redpanda_password}",
+  "PLATFORM_ADMIN_EMAILS=",
+]
+
+[[config.domains]]
+serviceName = "nginx"
+port = 80
+host = "${main_domain}"
+
+# Entrypoint script that calculates parent domain and patches nginx config
+[[config.mounts]]
+filePath = "/volumes/nginx/entrypoint.sh"
+content = """
+#!/bin/sh
+set -e
+
+# Calculate parent domain from HOST_ADDRESS
+# huly.example.com -> example.com
+# app.huly.example.com -> huly.example.com
+PARENT_DOMAIN=$(echo "$HOST_ADDRESS" | sed 's/^[^.]*\.//')
+
+echo "=== Huly V7 Nginx Entrypoint ==="
+echo "HOST_ADDRESS: $HOST_ADDRESS"
+echo "PARENT_DOMAIN: $PARENT_DOMAIN"
+
+# Patch the nginx config with actual domains for cookie rewriting
+sed -i "s/PARENT_DOMAIN_PLACEHOLDER/.$PARENT_DOMAIN/g" /etc/nginx/conf.d/default.conf
+sed -i "s/HOST_ADDRESS_PLACEHOLDER/$HOST_ADDRESS/g" /etc/nginx/conf.d/default.conf
+
+echo "Nginx config patched successfully!"
+echo "Starting nginx..."
+
+# Start nginx in foreground
+exec nginx -g 'daemon off;'
+"""
+
+# Nginx config with all V7 routes and cookie fixes
+[[config.mounts]]
+filePath = "/volumes/nginx/.huly.nginx"
+content = """
+server {
+    listen 80;
+    server_name _;
+    client_max_body_size 0;
+
+    # Frontend
+    location / {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_pass http://front:8080;
+    }
+
+    # Accounts - WITH COOKIE FIXES FOR V7 SESSION PERSISTENCE
+    location /_accounts {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # IMPORTANT: Hardcode https - $scheme returns "http" inside Docker container
+        proxy_set_header X-Forwarded-Proto https;
+
+        rewrite ^/_accounts(/.*)$ $1 break;
+        
+        # Cookie handling fixes for V7 session persistence
+        proxy_cookie_path / /;
+        proxy_cookie_flags ~ secure samesite=lax;
+        # Dynamic cookie domain - replaced by entrypoint.sh
+        proxy_cookie_domain PARENT_DOMAIN_PLACEHOLDER HOST_ADDRESS_PLACEHOLDER;
+        
+        proxy_pass http://account:3000/;
+    }
+
+    # AI Bot
+    location /_ai {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        rewrite ^/_ai(/.*)$ $1 break;
+        proxy_pass http://aibot:4011/;
+    }
+
+    # Love (Video calls service)
+    location /_love {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        rewrite ^/_love(/.*)$ $1 break;
+        proxy_pass http://love:8097/;
+    }
+
+    # Collaborator (WebSocket)
+    location /_collaborator {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        rewrite ^/_collaborator(/.*)$ $1 break;
+        proxy_pass http://collaborator:3078/;
+    }
+
+    # Transactor (WebSocket)
+    location /_transactor {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        rewrite ^/_transactor(/.*)$ $1 break;
+        proxy_pass http://transactor:3333/;
+    }
+
+    # Transactor token shortcuts (JWT paths)
+    location ~ ^/eyJ {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://transactor:3333;
+    }
+
+    # Rekoni
+    location /_rekoni {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        rewrite ^/_rekoni(/.*)$ $1 break;
+        proxy_pass http://rekoni:4004/;
+    }
+
+    # Stats
+    location /_stats {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        rewrite ^/_stats(/.*)$ $1 break;
+        proxy_pass http://stats:4900/;
+    }
+
+    # Pulse (WebSocket)
+    location /_pulse {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        rewrite ^/_pulse(.*)$ /ws$1 break;
+        proxy_pass http://hulypulse:8098;
+    }
+
+    # Stream
+    location /_stream {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        rewrite ^/_stream(.*)$ $1 break;
+        proxy_pass http://stream:1081;
+    }
+
+    # Preview
+    location /_preview {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        rewrite ^/_preview(.*)$ $1 break;
+        proxy_pass http://preview:4043;
+    }
+
+    # Datalake
+    location /_datalake {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        rewrite ^/_datalake(/.*)$ $1 break;
+        proxy_pass http://datalake:4031/;
+    }
+
+    # Billing
+    location /_billing {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        rewrite ^/_billing(/.*)$ $1 break;
+        proxy_pass http://billing:4042/;
+    }
+}
+"""

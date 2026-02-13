@@ -89,7 +89,7 @@ services:
     restart: unless-stopped
 
   rekoni:
-    image: haiodo/rekoni-service:${HULY_VERSION}
+    image: intabiafusion/rekoni-service:${HULY_VERSION}
     environment:
       - SECRET=${SECRET}
     deploy:
@@ -98,8 +98,34 @@ services:
           memory: 500M
     restart: unless-stopped
 
+  print:
+    image: intabiafusion/print:${HULY_VERSION}
+    environment:
+      - SECRET=${SECRET}
+      - STORAGE_CONFIG=${STORAGE_CONFIG}
+      - STATS_URL=http://stats:4900
+    restart: unless-stopped
+
+  github:
+    image: intabiafusion/github:${HULY_VERSION}
+    environment:
+      - PORT=3500
+      - STORAGE_CONFIG=${STORAGE_CONFIG}
+      - SERVER_SECRET=${SECRET}
+      - ACCOUNTS_URL=http://account:3000
+      - STATS_URL=http://stats:4900
+      - APP_ID=${GITHUB_APPID:-}
+      - CLIENT_ID=${GITHUB_CLIENTID:-}
+      - CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - PRIVATE_KEY=${GITHUB_PRIVATE_KEY:-}
+      - COLLABORATOR_URL=wss://${HOST_ADDRESS}/_collaborator
+      - WEBHOOK_SECRET=${SECRET}
+      - FRONT_URL=https://${HOST_ADDRESS}
+      - BOT_NAME=${GITHUB_BOT_NAME:-}
+    restart: unless-stopped
+
   transactor:
-    image: haiodo/transactor:${HULY_VERSION}
+    image: intabiafusion/transactor:${HULY_VERSION}
     environment:
       - SERVER_PORT=3333
       - SERVER_SECRET=${SECRET}
@@ -115,7 +141,7 @@ services:
     restart: unless-stopped
 
   collaborator:
-    image: haiodo/collaborator:${HULY_VERSION}
+    image: intabiafusion/collaborator:${HULY_VERSION}
     environment:
       - COLLABORATOR_PORT=3078
       - SECRET=${SECRET}
@@ -125,7 +151,7 @@ services:
     restart: unless-stopped
 
   account:
-    image: haiodo/account:${HULY_VERSION}
+    image: intabiafusion/account:${HULY_VERSION}
     depends_on:
       postgres:
         condition: service_healthy
@@ -150,7 +176,7 @@ services:
     restart: unless-stopped
 
   workspace:
-    image: haiodo/workspace:${HULY_VERSION}
+    image: intabiafusion/workspace:${HULY_VERSION}
     environment:
       - SERVER_SECRET=${SECRET}
       - DB_URL=${CR_DB_URL}
@@ -164,7 +190,7 @@ services:
     restart: unless-stopped
 
   front:
-    image: haiodo/front:${HULY_VERSION}
+    image: intabiafusion/front:${HULY_VERSION}
     environment:
       - SERVER_PORT=8080
       - SERVER_SECRET=${SECRET}
@@ -190,13 +216,16 @@ services:
       - PREVIEW_URL=https://${HOST_ADDRESS}/_preview
       - DATALAKE_URL=https://${HOST_ADDRESS}/_datalake
       - FILES_URL=https://${HOST_ADDRESS}/_datalake/blob/:workspace/:blobId/:filename
+      - PRINT_URL=https://${HOST_ADDRESS}/_print
+      - GITHUB_APP=${GITHUB_APPID:-}
+      - GITHUB_CLIENTID=${GITHUB_CLIENTID:-}
       - AI_URL=https://${HOST_ADDRESS}/_ai
       - BILLING_URL=https://${HOST_ADDRESS}/_billing
       - LIVEKIT_WS=wss://${LIVEKIT_HOST:-}
     restart: unless-stopped
 
   datalake:
-    image: haiodo/datalake:${HULY_VERSION}
+    image: intabiafusion/datalake:${HULY_VERSION}
     depends_on:
       minio:
         condition: service_healthy
@@ -213,7 +242,7 @@ services:
     restart: unless-stopped
 
   fulltext:
-    image: haiodo/fulltext:${HULY_VERSION}
+    image: intabiafusion/fulltext:${HULY_VERSION}
     environment:
       - SERVER_SECRET=${SECRET}
       - DB_URL=${CR_DB_URL}
@@ -227,14 +256,14 @@ services:
     restart: unless-stopped
 
   stats:
-    image: haiodo/stats:${HULY_VERSION}
+    image: intabiafusion/stats:${HULY_VERSION}
     environment:
       - PORT=4900
       - SERVER_SECRET=${SECRET}
     restart: unless-stopped
 
   rating:
-    image: haiodo/rating:${HULY_VERSION}
+    image: intabiafusion/rating:${HULY_VERSION}
     depends_on:
       redpanda:
         condition: service_started
@@ -250,7 +279,7 @@ services:
     restart: unless-stopped
 
   hulypulse:
-    image: haiodo/hulypulse:${HULY_VERSION}
+    image: intabiafusion/hulypulse:${HULY_VERSION}
     depends_on:
       redis:
         condition: service_started
@@ -262,7 +291,7 @@ services:
     restart: unless-stopped
 
   process-service:
-    image: haiodo/process:${HULY_VERSION}
+    image: intabiafusion/process:${HULY_VERSION}
     depends_on:
       redpanda:
         condition: service_started
@@ -273,7 +302,7 @@ services:
     restart: unless-stopped
 
   stream:
-    image: haiodo/stream:${HULY_VERSION}
+    image: intabiafusion/stream:${HULY_VERSION}
     environment:
       - STREAM_ENDPOINT_URL=datalake://datalake:4031
       - STREAM_INSECURE=true
@@ -288,7 +317,7 @@ services:
     restart: unless-stopped
 
   media:
-    image: haiodo/media:${HULY_VERSION}
+    image: intabiafusion/media:${HULY_VERSION}
     environment:
       - ACCOUNTS_URL=http://account:3000
       - SECRET=${SECRET}
@@ -296,7 +325,7 @@ services:
     restart: unless-stopped
 
   preview:
-    image: haiodo/preview:${HULY_VERSION}
+    image: intabiafusion/preview:${HULY_VERSION}
     environment:
       - SECRET=${SECRET}
       - STORAGE_CONFIG=${STORAGE_CONFIG}
@@ -305,7 +334,7 @@ services:
     restart: unless-stopped
 
   love:
-    image: haiodo/love:${HULY_VERSION}
+    image: intabiafusion/love:${HULY_VERSION}
     environment:
       - PORT=8097
       - SECRET=${SECRET}
@@ -319,8 +348,22 @@ services:
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-devsecret}
     restart: unless-stopped
 
+  love-agent:
+    image: intabiafusion/love-agent:${HULY_VERSION}
+    depends_on:
+      - love
+      - aibot
+    environment:
+      - SERVER_SECRET=${SECRET}
+      - PLATFORM_URL=http://aibot:4011
+      - LIVEKIT_URL=${LIVEKIT_HOST:-}
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-devkey}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-devsecret}
+      - STT_PROVIDER=${LOVE_AGENT_STT_PROVIDER:-stream}
+    restart: unless-stopped
+
   aibot:
-    image: haiodo/ai-bot:${HULY_VERSION}
+    image: intabiafusion/ai-bot:${HULY_VERSION}
     depends_on:
       - account
       - transactor
@@ -342,10 +385,14 @@ services:
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
       - OPENAI_SUMMARY_MODEL=${OPENAI_SUMMARY_MODEL:-}
       - OPENAI_TRANSLATE_MODEL=${OPENAI_TRANSLATE_MODEL:-}
+      - STT_PROVIDER=${STT_PROVIDER:-}
+      - STT_URL=${STT_URL:-}
+      - STT_API_KEY=${STT_API_KEY:-}
+      - STT_MODEL=${STT_MODEL:-}
     restart: unless-stopped
 
   billing:
-    image: haiodo/billing:${HULY_VERSION}
+    image: intabiafusion/billing:${HULY_VERSION}
     depends_on:
       postgres:
         condition: service_healthy

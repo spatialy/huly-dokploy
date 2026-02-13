@@ -1,7 +1,5 @@
 # Huly V7 Dokploy Template
 
-## F*ck me, after spending 50 days trying to deploy Huly as a non-coder I finally did it. Here's how using Dokploy:
-
 ---
 
 ## Prerequisites: Get Your Server IP and Create Domains
@@ -179,24 +177,27 @@ This makes the template **zero-config** - you just set your domain and it works!
 | minio | latest | Object storage |
 | elastic | 7.14.2 | Search engine |
 | nginx | 1.21.3 | Reverse proxy with cookie fixes |
-| account | v0.7.315 | Account management |
-| transactor | v0.7.315 | Data synchronization |
-| collaborator | v0.7.315 | Real-time collaboration |
-| front | v0.7.315 | Frontend |
-| workspace | v0.7.315 | Workspace management |
-| fulltext | v0.7.315 | Full-text search |
-| stats | v0.7.315 | Statistics |
-| rekoni | v0.7.315 | Document processing |
-| datalake | v0.7.315 | Data storage API |
-| hulypulse | v0.7.315 | Real-time updates |
-| stream | v0.7.315 | Media streaming |
-| preview | v0.7.315 | File previews |
-| media | v0.7.315 | Media processing |
-| love | v0.7.315 | Video calls service |
-| aibot | v0.7.315 | AI assistant |
-| billing | v0.7.315 | Billing service |
-| rating | v0.7.315 | Rating service |
-| process-service | v0.7.315 | Background processing |
+| account | v0.7.331 | Account management |
+| transactor | v0.7.331 | Data synchronization |
+| collaborator | v0.7.331 | Real-time collaboration |
+| front | v0.7.331 | Frontend |
+| workspace | v0.7.331 | Workspace management |
+| fulltext | v0.7.331 | Full-text search |
+| stats | v0.7.331 | Statistics |
+| rekoni | v0.7.331 | Document processing |
+| datalake | v0.7.331 | Data storage API |
+| hulypulse | v0.7.331 | Real-time updates |
+| stream | v0.7.331 | Media streaming |
+| preview | v0.7.331 | File previews |
+| media | v0.7.331 | Media processing |
+| love | v0.7.331 | Video calls service |
+| love-agent | v0.7.331 | AI voice agent for video calls |
+| aibot | v0.7.331 | AI assistant |
+| billing | v0.7.331 | Billing service |
+| rating | v0.7.331 | Rating service |
+| process-service | v0.7.331 | Background processing |
+| print | v0.7.331 | Print/export service |
+| github | v0.7.331 | GitHub integration |
 
 ## Usage
 
@@ -237,6 +238,27 @@ For video calls, you would need to:
 2. Set `LIVEKIT_HOST`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` in the love service
 3. Configure firewall rules for ports 7880, 7881, 5349, 3478, 50000-60000
 
+## Optional: GitHub Integration
+
+The GitHub service is included but dormant by default. To enable it:
+
+1. **Create a GitHub App** at https://github.com/settings/apps/new
+   - Set the **Webhook URL** to `https://{your-domain}/_github`
+   - Grant permissions: Issues (Read & Write), Pull requests (Read & Write), Contents (Read)
+   - Subscribe to events: Issues, Pull request, Issue comment
+   - Generate a **Private Key** after creation
+
+2. **Set environment variables** in Dokploy:
+   ```
+   GITHUB_APPID=<your App ID>
+   GITHUB_CLIENTID=<your Client ID>
+   GITHUB_CLIENT_SECRET=<your Client Secret>
+   GITHUB_PRIVATE_KEY=<your Private Key, base64-encoded>
+   GITHUB_BOT_NAME=<your App's bot username>
+   ```
+
+3. **Redeploy** the template
+
 ## Troubleshooting
 
 ### Login loop / Logged out on refresh
@@ -263,23 +285,11 @@ Check that all services are on the same Docker network. Dokploy should handle th
 
 ## Credits
 
-- Original Huly: https://github.com/hcengineering/huly
-- V7 Cookie Fix Research: 4 days of debugging session persistence issues
-- Template Author: Created to help Dokploy users avoid the session logout bug
+- **Original Huly**: https://github.com/hcengineering/huly
+- **PostgreSQL Fork**: https://github.com/intabia-fusion/foundation-selfhost — This template uses the intabia-fusion fork of Huly that replaces CockroachDB with PostgreSQL, making self-hosting simpler and more resource-friendly.
+- **Docker Images** (`intabiafusion/*`): https://github.com/intabia-fusion
+- **Dokploy Template**: Created to help non-developers deploy Huly without headaches. If it helps you, give it a star!
 
 ## License
 
 MIT - Use freely!
-
-
-## Credits
-
-- **Original Huly**: https://github.com/hcengineering/huly
-- **PostgreSQL Fork**: https://github.com/intabia-fusion/foundation-selfhost - This template is based on the amazing work by the intabia-fusion team who created a fork of Huly that uses PostgreSQL instead of CockroachDB. This makes self-hosting much simpler and more resource-friendly. Huge thanks! 🙏
-https://github.com/haiodo - The genius behind the fork. All Docker images used in this template (`haiodo/*`) are built by him. If you love Huly, show him support! ⭐
-
-- **Dokploy Template**: Created after 50 days of debugging to help non-developers deploy Huly without headaches
-This template was created after countless hours of debugging. If it helps you, give it a ⭐!
-
-
-This template was created after countless hours of debugging. If it helps you, give it a ⭐!

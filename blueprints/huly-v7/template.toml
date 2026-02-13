@@ -6,7 +6,7 @@ redpanda_password = "${password:16}"
 
 [config]
 env = [
-  "HULY_VERSION=v0.7.315",
+  "HULY_VERSION=v0.7.331",
   "DOCKER_NAME=huly_v7",
   "HOST_ADDRESS=${main_domain}",
   "SECRET=${huly_secret}",
@@ -30,6 +30,18 @@ env = [
   "OPENAI_BASE_URL=",
   "OPENAI_SUMMARY_MODEL=",
   "OPENAI_TRANSLATE_MODEL=",
+  "# GitHub Integration (optional - requires GitHub App)",
+  "GITHUB_APPID=",
+  "GITHUB_CLIENTID=",
+  "GITHUB_CLIENT_SECRET=",
+  "GITHUB_PRIVATE_KEY=",
+  "GITHUB_BOT_NAME=",
+  "# Speech-to-Text Configuration (optional - for AI voice features)",
+  "STT_PROVIDER=",
+  "STT_URL=",
+  "STT_API_KEY=",
+  "STT_MODEL=",
+  "LOVE_AGENT_STT_PROVIDER=stream",
 ]
 
 [[config.domains]]
@@ -239,6 +251,26 @@ server {
 
         rewrite ^/_datalake(/.*)$ $1 break;
         proxy_pass http://datalake:4031/;
+    }
+
+    # GitHub Integration
+    location /_github {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        rewrite ^/_github(/.*)$ $1 break;
+        proxy_pass http://github:3500/;
+    }
+
+    # Print
+    location /_print {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        rewrite ^/_print(/.*)$ $1 break;
+        proxy_pass http://print:4005/;
     }
 
     # Billing

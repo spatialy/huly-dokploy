@@ -43,7 +43,7 @@ Now you have 2 domains:
 
 1. In Dokploy, clikc create project call it somehow like "Huly"  and clikc create.
 then clikc create service and select template.
- go to **Templates** and add this repository in the Base url filed. URL "https://raw.githubusercontent.com/shali1995/huly-dokploy-fucking-working/main"
+ go to **Templates** and add this repository in the Base url field. URL: `https://raw.githubusercontent.com/spatialy/huly-dokploy/main`
 then clikc create.
 2. Select the **Huly V7** template
 3. Go to **Environment** tab and change:
@@ -79,6 +79,54 @@ SES_ACCESS_KEY=your-access-key
 SES_SECRET_KEY=your-secret-key
 SES_REGION=us-east-1
 ```
+
+<details>
+<summary><strong>AWS SES Setup Guide (IAM + SES Console)</strong></summary>
+
+#### 1. Verify your sender identity in SES
+
+1. Go to **Amazon SES** > **Identities** > **Create identity**
+2. Choose **Email address** (quick) or **Domain** (production)
+   - For email: enter the address you'll use as `MAIL_FROM`, click the verification link
+   - For domain: add the DKIM CNAME records SES gives you to your DNS
+3. If your SES account is in **sandbox mode** (default for new accounts), you can only send to verified email addresses. To send to anyone, request **production access**: SES > **Account dashboard** > **Request production access**
+
+#### 2. Create an IAM user for SES
+
+1. Go to **IAM** > **Users** > **Create user**
+2. Name it something like `huly-ses-sender`
+3. Select **Attach policies directly**
+4. Click **Create policy** and use this JSON:
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Effect": "Allow",
+         "Action": [
+           "ses:SendEmail",
+           "ses:SendRawEmail"
+         ],
+         "Resource": "*"
+       }
+     ]
+   }
+   ```
+   Name it `HulySESSendEmail` and attach it to the user
+5. Go to the user > **Security credentials** > **Create access key**
+6. Select **Application running outside AWS**
+7. Copy the **Access key ID** → `SES_ACCESS_KEY` and **Secret access key** → `SES_SECRET_KEY`
+
+#### 3. Set the Huly env vars
+
+```
+MAIL_FROM=noreply@yourdomain.com   # Must match a verified SES identity
+SES_ACCESS_KEY=AKIA...             # From step 2
+SES_SECRET_KEY=...                 # From step 2
+SES_REGION=us-east-1               # The region where you verified your identity
+```
+
+</details>
 
 Click **Save** and **Redeploy**.
 

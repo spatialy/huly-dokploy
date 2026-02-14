@@ -382,6 +382,38 @@ OPENAI_SUMMARY_MODEL=llama3.1
 
 The bot provides: chat, text translation, message/meeting summarization, and PDF import.
 
+### Speech-to-Text (STT) for Video Calls
+
+If you have LiveKit configured for video calls, Huly can transcribe meeting audio in real-time. The **love-agent** captures audio from LiveKit and sends chunks to the **aibot** for transcription.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `STT_PROVIDER` | *(empty — disabled)* | Transcription backend: `openai` (Whisper API), `deepgram`, or `server` |
+| `STT_URL` | *(empty)* | Custom Whisper endpoint (only for `openai` provider). Leave empty for OpenAI cloud. Set for self-hosted (e.g., `http://your-whisper:9007`) |
+| `STT_API_KEY` | *(empty)* | API key for your STT provider. For `openai`: your OpenAI key. For `deepgram`: your Deepgram key |
+| `STT_MODEL` | `whisper-1` / `nova-2` | Model to use. `whisper-1` for OpenAI, `nova-2` for Deepgram |
+| `LOVE_AGENT_STT_PROVIDER` | `stream` | **Do not change.** The intabiafusion fork only supports `stream` mode |
+
+**Example — Use OpenAI Whisper (same key as AI assistant):**
+```
+STT_PROVIDER=openai
+```
+(Uses `OPENAI_API_KEY` automatically — no need to set `STT_API_KEY` separately if already configured)
+
+**Example — Use Deepgram:**
+```
+STT_PROVIDER=deepgram
+STT_API_KEY=your-deepgram-api-key
+```
+
+**Example — Self-hosted Whisper (faster-whisper, etc.):**
+```
+STT_PROVIDER=openai
+STT_URL=http://your-whisper-server:9007
+STT_API_KEY=not-needed
+STT_MODEL=whisper-large-v3
+```
+
 ## Troubleshooting
 
 ### Login loop / Logged out on refresh

@@ -13,7 +13,7 @@ meta.json                              # Blueprint registry: id, name, version, 
 README.md                              # User-facing deployment guide
 blueprints/huly-v7/
   template.toml                        # Dokploy template: variables, env, domains, mounted files
-  docker-compose.yml                   # 27 services orchestration
+  docker-compose.yml                   # 28 services orchestration
   huly.svg                             # Logo for Dokploy UI
 ```
 
@@ -30,7 +30,7 @@ All traffic enters through **nginx:80**, which routes by URL path prefix:
 | **Proxy** | nginx (routes `/_<name>` paths to backends) |
 | **Infrastructure** | postgres:18.1, redis:8.0, redpanda:v25.2.11 (Kafka), minio (S3), elastic:7.14.2 |
 | **Core** | account:3000, transactor:3333, front:8080, workspace, collaborator:3078, fulltext:4700 |
-| **Feature** | love:8097 (video), love-agent, aibot:4011, billing:4042, stats:4900, hulypulse:8098, stream:1081, media, preview:4043, datalake:4031, rekoni:4004, print:4005, github:3500, rating, process-service |
+| **Feature** | love:8097 (video), love-agent, aibot:4011, billing:4042, stats:4900, hulypulse:8098, stream:1081, media, preview:4043, datalake:4031, rekoni:4004, print:4005, github:3500, mail:8097, rating, process-service |
 
 ### Session Persistence Fix (the key differentiator)
 
@@ -58,6 +58,7 @@ These feed into `[config] env` which becomes the `.env` for docker-compose. The 
 
 ### Required
 - `HOST_ADDRESS` — your domain (e.g., `huly.example.com`). Everything derives from this.
+- `MAIL_FROM`, `SMTP_HOST`, `SMTP_USERNAME`, `SMTP_PASSWORD` — SMTP config for OTP login emails (or use SES_* vars for Amazon SES)
 
 ### Optional
 - `LIVEKIT_HOST`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` — video calls (LiveKit deployed separately)
@@ -75,7 +76,7 @@ These feed into `[config] env` which becomes the `.env` for docker-compose. The 
 ## Common Tasks
 
 ### Update Huly version
-Change `HULY_VERSION=v0.7.331` in `template.toml` line 9 and `meta.json` version field. All 20 `intabiafusion/*` services use this single variable.
+Change `HULY_VERSION=v0.7.331` in `template.toml` line 9 and `meta.json` version field. All 21 `intabiafusion/*` services use this single variable.
 
 ### Add/modify a service
 1. Add the service in `blueprints/huly-v7/docker-compose.yml`
@@ -99,7 +100,7 @@ Note: The entrypoint.sh and nginx config are embedded in template.toml as `[[con
 |---------|--------|
 | Calendar | Requires MongoDB + KVS (new infrastructure). Deferred to future. |
 | LiveKit (embedded) | `network_mode: host` incompatible with Dokploy. Keep as separate deploy. |
-| Gmail/Telegram/Mail | Advanced integrations requiring external credentials. Future phase. |
+| Gmail/Telegram | Advanced integrations requiring external credentials. Future phase. |
 
 ## Upstream References
 

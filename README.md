@@ -56,7 +56,31 @@ then clikc create.
    - Enable **HTTPS**
 5. Click **Deploy**
 
-🎉 **Huly is now running!** 
+🎉 **Huly is now running!**
+
+> **Important:** Huly v0.7.331 uses OTP (email code) as the default login method. You **must** configure SMTP for email delivery, otherwise users won't receive login codes. Password login is also available as a fallback (click "Sign in with password" on the login page).
+
+### Configure Email (Required for OTP Login)
+
+In your Huly app's **Environment** tab, set these SMTP variables:
+
+```
+MAIL_FROM=noreply@yourdomain.com
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+```
+
+**Using Amazon SES instead?** Leave the SMTP fields blank and set:
+```
+MAIL_FROM=noreply@yourdomain.com
+SES_ACCESS_KEY=your-access-key
+SES_SECRET_KEY=your-secret-key
+SES_REGION=us-east-1
+```
+
+Click **Save** and **Redeploy**.
 
 ---
 
@@ -198,6 +222,7 @@ This makes the template **zero-config** - you just set your domain and it works!
 | process-service | v0.7.331 | Background processing |
 | print | v0.7.331 | Print/export service |
 | github | v0.7.331 | GitHub integration |
+| mail | v0.7.331 | Email delivery (OTP codes, notifications) |
 
 ## Usage
 

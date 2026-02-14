@@ -351,17 +351,17 @@ GITHUB_BOT_NAME=my-huly-app[bot]
 
 ## Optional: AI Assistant
 
-The AI bot is included but dormant. It activates when you provide an API key for any **OpenAI-compatible** provider (OpenAI, Groq, Together AI, Ollama, LM Studio, etc.).
+The AI bot service is included but **requires `OPENAI_API_KEY` to start**. Without a valid API key, the aibot container will crash-loop — this is expected and won't affect the rest of Huly (nginx is configured to handle optional services being down).
 
-In your Huly app's **Environment** tab, set:
+To enable the AI assistant, set these in your Huly app's **Environment** tab:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `OPENAI_API_KEY` | *(empty — AI disabled)* | API key for your OpenAI-compatible provider |
-| `OPENAI_BASE_URL` | `https://api.openai.com/v1` | API endpoint. Change for alternative providers (e.g. `http://localhost:11434/v1` for Ollama, `http://localhost:1234/v1` for LM Studio) |
-| `OPENAI_MODEL` | `gpt-4o-mini` | Main chat model (conversation, tool use) |
-| `OPENAI_SUMMARY_MODEL` | `gpt-4o-mini` | Model for summarization and translation |
-| `OPENAI_TRANSLATE_MODEL` | `gpt-4o-mini` | Model for translation (note: current code uses SUMMARY_MODEL instead) |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENAI_API_KEY` | **Yes** (for AI to work) | API key for your OpenAI-compatible provider |
+| `OPENAI_BASE_URL` | No | API endpoint (default: `https://api.openai.com/v1`). Change for alternative providers |
+| `OPENAI_MODEL` | No | Main chat model (default: `gpt-4o-mini`) |
+| `OPENAI_SUMMARY_MODEL` | No | Model for summarization (default: `gpt-4o-mini`) |
+| `OPENAI_TRANSLATE_MODEL` | No | Model for translation (default: `gpt-4o-mini`) |
 
 **Example — OpenAI:**
 ```
@@ -377,6 +377,8 @@ OPENAI_BASE_URL=http://host.docker.internal:11434/v1
 OPENAI_MODEL=llama3.1
 OPENAI_SUMMARY_MODEL=llama3.1
 ```
+
+> **Note:** If you don't need AI features, you can safely ignore the aibot crash-loop in your container logs. It won't affect other services.
 
 The bot provides: chat, text translation, message/meeting summarization, and PDF import.
 

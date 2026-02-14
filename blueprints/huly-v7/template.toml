@@ -39,7 +39,7 @@ env = [
   "GITHUB_PRIVATE_KEY=",
   "GITHUB_BOT_NAME=",
   "# Speech-to-Text Configuration (optional - for AI voice features)",
-  "STT_PROVIDER=openai",
+  "STT_PROVIDER=",
   "STT_URL=",
   "STT_API_KEY=",
   "STT_MODEL=",
@@ -98,6 +98,9 @@ server {
     server_name _;
     client_max_body_size 0;
 
+    # Docker embedded DNS - allows nginx to start even if optional services are down
+    resolver 127.0.0.11 valid=10s;
+
     # Frontend
     location / {
         proxy_set_header Host $host;
@@ -126,8 +129,9 @@ server {
         proxy_pass http://account:3000/;
     }
 
-    # AI Bot
+    # AI Bot (optional - uses variable so nginx starts even if aibot is down)
     location /_ai {
+        set $upstream_ai http://aibot:4011;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -137,7 +141,7 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         rewrite ^/_ai(/.*)$ $1 break;
-        proxy_pass http://aibot:4011/;
+        proxy_pass $upstream_ai;
     }
 
     # Love (Video calls service)
@@ -265,24 +269,26 @@ server {
         proxy_pass http://datalake:4031/;
     }
 
-    # GitHub Integration
+    # GitHub Integration (optional - uses variable so nginx starts even if github is down)
     location /_github {
+        set $upstream_github http://github:3500;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
         rewrite ^/_github(/.*)$ $1 break;
-        proxy_pass http://github:3500/;
+        proxy_pass $upstream_github;
     }
 
-    # Print
+    # Print (optional - uses variable so nginx starts even if print is down)
     location /_print {
+        set $upstream_print http://print:4005;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
         rewrite ^/_print(/.*)$ $1 break;
-        proxy_pass http://print:4005/;
+        proxy_pass $upstream_print;
     }
 
     # Billing

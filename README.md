@@ -332,6 +332,37 @@ The GitHub service is included but dormant by default. To enable it:
 
 3. **Redeploy** the template
 
+## Optional: AI Assistant
+
+The AI bot is included but dormant. It activates when you provide an API key for any **OpenAI-compatible** provider (OpenAI, Groq, Together AI, Ollama, LM Studio, etc.).
+
+In your Huly app's **Environment** tab, set:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENAI_API_KEY` | *(empty — AI disabled)* | API key for your OpenAI-compatible provider |
+| `OPENAI_BASE_URL` | `https://api.openai.com/v1` | API endpoint. Change for alternative providers (e.g. `http://localhost:11434/v1` for Ollama, `http://localhost:1234/v1` for LM Studio) |
+| `OPENAI_MODEL` | `gpt-4o-mini` | Main chat model (conversation, tool use) |
+| `OPENAI_SUMMARY_MODEL` | `gpt-4o-mini` | Model for summarization and translation |
+| `OPENAI_TRANSLATE_MODEL` | `gpt-4o-mini` | Model for translation (note: current code uses SUMMARY_MODEL instead) |
+
+**Example — OpenAI:**
+```
+OPENAI_API_KEY=sk-proj-...
+OPENAI_MODEL=gpt-4o
+OPENAI_SUMMARY_MODEL=gpt-4o-mini
+```
+
+**Example — Ollama (local):**
+```
+OPENAI_API_KEY=ollama
+OPENAI_BASE_URL=http://host.docker.internal:11434/v1
+OPENAI_MODEL=llama3.1
+OPENAI_SUMMARY_MODEL=llama3.1
+```
+
+The bot provides: chat, text translation, message/meeting summarization, and PDF import.
+
 ## Troubleshooting
 
 ### Login loop / Logged out on refresh

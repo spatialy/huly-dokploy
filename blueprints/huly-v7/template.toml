@@ -28,6 +28,7 @@ env = [
   "# OpenAI Configuration (optional - for AI assistant)",
   "OPENAI_API_KEY=",
   "OPENAI_BASE_URL=",
+  "OPENAI_MODEL=",
   "OPENAI_SUMMARY_MODEL=",
   "OPENAI_TRANSLATE_MODEL=",
   "# GitHub Integration (optional - requires GitHub App)",

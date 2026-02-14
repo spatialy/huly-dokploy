@@ -103,6 +103,7 @@ services:
     environment:
       - PORT=8097
       - SOURCE=${MAIL_FROM:-}
+      - QUEUE_CONFIG=redpanda:9092
       - SMTP_HOST=${SMTP_HOST:-}
       - SMTP_PORT=${SMTP_PORT:-587}
       - SMTP_USERNAME=${SMTP_USERNAME:-}

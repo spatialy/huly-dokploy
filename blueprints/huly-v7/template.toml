@@ -39,7 +39,7 @@ env = [
   "GITHUB_PRIVATE_KEY=",
   "GITHUB_BOT_NAME=",
   "# Speech-to-Text Configuration (optional - for AI voice features)",
-  "STT_PROVIDER=",
+  "STT_PROVIDER=openai",
   "STT_URL=",
   "STT_API_KEY=",
   "STT_MODEL=",

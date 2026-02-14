@@ -237,6 +237,7 @@ services:
       - PRINT_URL=https://${HOST_ADDRESS}/_print
       - GITHUB_APP=${GITHUB_APPID:-}
       - GITHUB_CLIENTID=${GITHUB_CLIENTID:-}
+      - GITHUB_URL=https://${HOST_ADDRESS}/_github
       - AI_URL=https://${HOST_ADDRESS}/_ai
       - BILLING_URL=https://${HOST_ADDRESS}/_billing
       - LIVEKIT_WS=wss://${LIVEKIT_HOST:-}

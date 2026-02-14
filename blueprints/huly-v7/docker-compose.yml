@@ -375,7 +375,7 @@ services:
     environment:
       - SERVER_SECRET=${SECRET}
       - PLATFORM_URL=http://aibot:4011
-      - LIVEKIT_URL=${LIVEKIT_HOST:-}
+      - LIVEKIT_URL=https://${LIVEKIT_HOST:-}
       - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-devkey}
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-devsecret}
       - STT_PROVIDER=${LOVE_AGENT_STT_PROVIDER:-stream}

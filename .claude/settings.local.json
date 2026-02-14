@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find:*)",
+      "Bash(git -C /Users/yulian/_GITHUB_REPOS/HULY_DOKPLOY log --oneline -20)",
+      "Bash(git -C /Users/yulian/_GITHUB_REPOS/HULY_DOKPLOY remote -v:*)",
+      "WebFetch(domain:hub.docker.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebSearch",
+      "Bash(grep:*)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(for img in account transactor front workspace collaborator)",
+      "Bash(do echo '=== intabiafusion/$img ===')",
+      "Bash(done)",
+      "Bash(do echo '=== haiodo/$img ===')",
+      "Bash(bash)",
+      "Bash(gh api:*)"
+    ]
+  }
+}

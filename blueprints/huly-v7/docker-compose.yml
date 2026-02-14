@@ -362,7 +362,7 @@ services:
       - STORAGE_CONFIG=${STORAGE_CONFIG}
       - STORAGE_PROVIDER_NAME=minio
       - BILLING_URL=http://billing:4042
-      - LIVEKIT_HOST=${LIVEKIT_HOST:-}
+      - LIVEKIT_HOST=https://${LIVEKIT_HOST:-}
       - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-devkey}
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-devsecret}
     restart: unless-stopped

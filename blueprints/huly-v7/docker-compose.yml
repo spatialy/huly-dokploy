@@ -116,6 +116,7 @@ services:
     image: intabiafusion/print:${HULY_VERSION}
     environment:
       - SECRET=${SECRET}
+      - ACCOUNTS_URL=http://account:3000
       - STORAGE_CONFIG=${STORAGE_CONFIG}
       - STATS_URL=http://stats:4900
     restart: unless-stopped
@@ -397,6 +398,7 @@ services:
       - STATS_URL=http://stats:4900
       - LOVE_ENDPOINT=http://love:8097
       - BILLING_URL=http://billing:4042
+      - CHUNK_STORAGE_CONFIG=minio|minio?accessKey=minioadmin&secretKey=minioadmin&rootBucket=chunks
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
       - OPENAI_MODEL=${OPENAI_MODEL:-}

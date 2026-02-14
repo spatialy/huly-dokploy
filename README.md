@@ -315,22 +315,39 @@ For video calls, you would need to:
 
 The GitHub service is included but dormant by default. To enable it:
 
-1. **Create a GitHub App** at https://github.com/settings/apps/new
-   - Set the **Webhook URL** to `https://{your-domain}/_github`
-   - Grant permissions: Issues (Read & Write), Pull requests (Read & Write), Contents (Read)
-   - Subscribe to events: Issues, Pull request, Issue comment
-   - Generate a **Private Key** after creation
+### Step 1: Create a GitHub App
 
-2. **Set environment variables** in Dokploy:
-   ```
-   GITHUB_APPID=<your App ID>
-   GITHUB_CLIENTID=<your Client ID>
-   GITHUB_CLIENT_SECRET=<your Client Secret>
-   GITHUB_PRIVATE_KEY=<your Private Key, base64-encoded>
-   GITHUB_BOT_NAME=<your App's bot username>
-   ```
+1. Go to https://github.com/settings/apps/new
+2. Set **Callback URL**: `https://{your-domain}/github`
+3. Set **Setup URL**: `https://{your-domain}/github` (check "Redirect on update")
+4. Set **Webhook URL**: `https://{your-domain}/_github/api/webhook`
+5. Set **Webhook secret**: `secret`
+6. **Permissions** — set all to Read & Write:
+   - Commit statuses, Contents, Custom properties, Discussions
+   - Issues, Pages, Projects, Pull requests, Webhooks
+   - Metadata: Read-only
+7. **Subscribe to events**: Issues, Pull request, Pull request review, Pull request review comment, Pull request review thread
+8. Click **Create GitHub App**
+9. Generate a **Private Key** (downloads a `.pem` file)
 
-3. **Redeploy** the template
+### Step 2: Set environment variables
+
+From your GitHub App's settings page, copy the values into Dokploy's **Environment** tab:
+
+```
+GITHUB_APPID=123456
+GITHUB_APPNAME=my-huly-app
+GITHUB_CLIENTID=Iv1.xxxxxxxxxx
+GITHUB_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+GITHUB_PRIVATE_KEY=<see below>
+GITHUB_BOT_NAME=my-huly-app[bot]
+```
+
+> **`GITHUB_PRIVATE_KEY` format:** Copy the PEM file content **as-is** into the env var. Replace newlines with literal `\n`.
+>
+> Quick conversion: `awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' your-app.private-key.pem`
+
+### Step 3: Redeploy
 
 ## Optional: AI Assistant
 

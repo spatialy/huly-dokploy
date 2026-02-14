@@ -33,6 +33,7 @@ env = [
   "OPENAI_TRANSLATE_MODEL=",
   "# GitHub Integration (optional - requires GitHub App)",
   "GITHUB_APPID=",
+  "GITHUB_APPNAME=",
   "GITHUB_CLIENTID=",
   "GITHUB_CLIENT_SECRET=",
   "GITHUB_PRIVATE_KEY=",

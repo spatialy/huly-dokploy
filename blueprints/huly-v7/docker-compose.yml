@@ -235,7 +235,7 @@ services:
       - DATALAKE_URL=https://${HOST_ADDRESS}/_datalake
       - FILES_URL=https://${HOST_ADDRESS}/_datalake/blob/:workspace/:blobId/:filename
       - PRINT_URL=https://${HOST_ADDRESS}/_print
-      - GITHUB_APP=${GITHUB_APPID:-}
+      - GITHUB_APP=${GITHUB_APPNAME:-}
       - GITHUB_CLIENTID=${GITHUB_CLIENTID:-}
       - GITHUB_URL=https://${HOST_ADDRESS}/_github
       - AI_URL=https://${HOST_ADDRESS}/_ai

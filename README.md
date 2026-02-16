@@ -26,7 +26,7 @@ This will show your server IP (example: `88.222.521.3`). Write it down - you'll 
 4. Replace it with YOUR server IP (e.g., `88.222.521.3`)
 5. Click **Save**
 
-**Create LiveKit Domain:**
+**Create LiveKit Domain (for video calls):**
 1. Click **Add** again
 2. Enter a name like `livekit`
 3. Click **Add**
@@ -41,10 +41,10 @@ Now you have 2 domains:
 
 ## Part 1: Deploy Huly
 
-1. In Dokploy, clikc create project call it somehow like "Huly"  and clikc create.
-then clikc create service and select template.
- go to **Templates** and add this repository in the Base url field. URL: `https://raw.githubusercontent.com/spatialy/huly-dokploy/main`
-then clikc create.
+1. In Dokploy, click create project, call it something like "Huly", and click create.
+Then click create service and select template.
+Go to **Templates** and add this repository in the Base URL field. URL: `https://raw.githubusercontent.com/spatialy/huly-dokploy/main`
+Then click create.
 2. Select the **Huly V7** template
 3. Go to **Environment** tab and change:
    ```
@@ -56,9 +56,9 @@ then clikc create.
    - Enable **HTTPS**
 5. Click **Deploy**
 
-🎉 **Huly is now running!**
+**Huly is now running!** This creates the `huly_net` Docker network that LiveKit will join later.
 
-> **Important:** Huly v0.7.331 uses OTP (email code) as the default login method. You **must** configure SMTP for email delivery, otherwise users won't receive login codes. Password login is also available as a fallback (click "Sign in with password" on the login page).
+> **Important:** Huly v0.7.315 uses OTP (email code) as the default login method. You **must** configure SMTP for email delivery, otherwise users won't receive login codes. Password login is also available as a fallback (click "Sign in with password" on the login page).
 
 ### Configure Email (Required for OTP Login)
 
@@ -134,31 +134,20 @@ Click **Save** and **Redeploy**.
 
 ## Part 2: Enable Video Calls (Optional)
 
-Video calls require LiveKit. Here's how to set it up:
+Video calls require LiveKit, deployed as a separate blueprint that connects to Huly via a shared Docker network (`huly_net`).
+
+> **Deployment order matters:** Deploy Huly first (it creates `huly_net`), then deploy LiveKit (it joins `huly_net`).
 
 ### Step 1: Deploy LiveKit
 
-1. In Dokploy, create a **new app**
-2. Go to **Templates** and search for **LiveKit**
-3. Select and create the LiveKit template
-4. Go to **Environment** tab, change:
-   ```
-   LIVEKIT_URL=livekit.dynu.net
-   ```
-   (Replace with your LiveKit domain)
-
-5. Go to **Domains** tab - you'll see 3 domains
-6. Find the one with **Port: 5349**, click edit:
-   - Change to `livekit.dynu.net` (your LiveKit domain)
+1. In Dokploy, create a **new project** (e.g., "LiveKit")
+2. Click create service and select **template**
+3. Use the same template repository URL: `https://raw.githubusercontent.com/spatialy/huly-dokploy/main`
+4. Select the **LiveKit (for Huly)** template
+5. Go to **Domains** tab:
+   - Change the domain to your LiveKit domain (e.g., `livekit.dynu.net`)
    - Enable **HTTPS**
-   - Click **Save**
-   
-7. Find the one with **Port: 7880**, click edit:
-   - Change to `livekit.dynu.net` (your LiveKit domain)
-   - Enable **HTTPS**
-   - Click **Save**
-
-8. Click **Deploy**
+6. Click **Deploy**
 
 ### Step 2: Connect Huly to LiveKit
 
@@ -166,8 +155,8 @@ Video calls require LiveKit. Here's how to set it up:
 2. Go to **Environment** tab
 3. Find and copy these values:
    ```
-   API_KEY=<your_generated_key>
-   API_SECRET=<your_generated_secret>
+   LIVEKIT_API_KEY=<your_generated_key>
+   LIVEKIT_API_SECRET=<your_generated_secret>
    ```
 
 4. Go back to your **Huly** app
@@ -179,19 +168,41 @@ Video calls require LiveKit. Here's how to set it up:
    LIVEKIT_API_SECRET=<paste your API_SECRET here>
    ```
 
-7. Click **Save** and **Deploy**
+7. Click **Save** and **Redeploy**
 
-🎉 **Video calls are now enabled!**
+**Video calls are now enabled!**
+
+### Network Architecture
+
+```
+                  huly_net (named Docker bridge)
+                  ┌──────────────────────────────┐
+                  │                              │
+  ┌───────────────┴──────────────┐  ┌────────────┴──────────┐
+  │  Huly Stack (huly-v7)        │  │  LiveKit Stack         │
+  │                              │  │                        │
+  │  nginx → all services        │  │  livekit (alias on     │
+  │  postgres, redis, redpanda   │  │    huly_net: "livekit")│
+  │  minio, elastic              │  │  redis (internal)      │
+  │  love-agent → livekit:7880   │  │                        │
+  └──────────────────────────────┘  └────────────────────────┘
+```
+
+- Huly creates `huly_net` (named network)
+- LiveKit joins `huly_net` as external
+- `love-agent` reaches LiveKit at `ws://livekit:7880` via the shared network
+- `love` (front-facing) uses the public URL `wss://<livekit-domain>` for browser WebRTC
 
 ---
 
 ## Important Notes
 
-- ⚠️ You need **2 separate subdomains**: one for Huly, one for LiveKit
-- ⚠️ Both domains must point to your server IP
-- ⚠️ HTTPS must be enabled on both domains
-- ⏳ Wait 1-2 minutes for DNS to propagate before deploying
-- 🔄 If something doesn't work, try redeploying
+- You need **2 separate subdomains**: one for Huly, one for LiveKit
+- Both domains must point to your server IP
+- HTTPS must be enabled on both domains
+- Wait 1-2 minutes for DNS to propagate before deploying
+- Deploy **Huly first**, then **LiveKit** (Huly creates the shared network)
+- If something doesn't work, try redeploying
 
 ---
 
@@ -203,8 +214,9 @@ Video calls require LiveKit. Here's how to set it up:
 - Redeploy the app
 
 ### Video calls not working
-- Check that both LiveKit domains (ports 5349 and 7880) have HTTPS enabled
-- Verify LIVEKIT_HOST, LIVEKIT_API_KEY, and LIVEKIT_API_SECRET are correct
+- Verify LiveKit was deployed **after** Huly (it needs `huly_net` to exist)
+- Check that LIVEKIT_HOST, LIVEKIT_API_KEY, and LIVEKIT_API_SECRET are correct in Huly's environment
+- Make sure your LiveKit domain has HTTPS enabled
 - Make sure your LiveKit domain is different from your Huly domain
 
 ### 502 Bad Gateway
@@ -249,28 +261,30 @@ This makes the template **zero-config** - you just set your domain and it works!
 | minio | latest | Object storage |
 | elastic | 7.14.2 | Search engine |
 | nginx | 1.21.3 | Reverse proxy with cookie fixes |
-| account | v0.7.331 | Account management |
-| transactor | v0.7.331 | Data synchronization |
-| collaborator | v0.7.331 | Real-time collaboration |
-| front | v0.7.331 | Frontend |
-| workspace | v0.7.331 | Workspace management |
-| fulltext | v0.7.331 | Full-text search |
-| stats | v0.7.331 | Statistics |
-| rekoni | v0.7.331 | Document processing |
-| datalake | v0.7.331 | Data storage API |
-| hulypulse | v0.7.331 | Real-time updates |
-| stream | v0.7.331 | Media streaming |
-| preview | v0.7.331 | File previews |
-| media | v0.7.331 | Media processing |
-| love | v0.7.331 | Video calls service |
-| love-agent | v0.7.331 | AI voice agent for video calls |
-| aibot | v0.7.331 | AI assistant |
-| billing | v0.7.331 | Billing service |
-| rating | v0.7.331 | Rating service |
-| process-service | v0.7.331 | Background processing |
-| print | v0.7.331 | Print/export service |
-| github | v0.7.331 | GitHub integration |
-| mail | v0.7.331 | Email delivery (OTP codes, notifications) |
+| account | v0.7.315 | Account management |
+| transactor | v0.7.315 | Data synchronization |
+| collaborator | v0.7.315 | Real-time collaboration |
+| front | v0.7.315 | Frontend |
+| workspace | v0.7.315 | Workspace management |
+| fulltext | v0.7.315 | Full-text search |
+| stats | v0.7.315 | Statistics |
+| rekoni | v0.7.315 | Document processing |
+| datalake | v0.7.315 | Data storage API |
+| hulypulse | v0.7.315 | Real-time updates |
+| stream | v0.7.315 | Media streaming |
+| preview | v0.7.315 | File previews |
+| media | v0.7.315 | Media processing |
+| love | v0.7.315 | Video calls service |
+| love-agent | v0.7.315 | AI voice agent for video calls |
+| aibot | v0.7.315 | AI assistant |
+| billing | v0.7.315 | Billing service |
+| rating | v0.7.315 | Rating service |
+| process-service | v0.7.315 | Background processing |
+| print | v0.7.315 | Print/export service |
+| github | v0.7.315 | GitHub integration |
+| mail | v0.7.315 | Email delivery (OTP codes, notifications) |
+
+All Huly services use `haiodo/*` Docker images from the [intabia-fusion/foundation-selfhost](https://github.com/intabia-fusion/foundation-selfhost) PostgreSQL fork.
 
 ## Usage
 
@@ -301,15 +315,9 @@ The template auto-generates these values:
 
 ## Optional: LiveKit (Video Calls)
 
-This template does NOT include LiveKit because:
-- LiveKit requires host networking or specific port forwarding
-- It needs separate SSL certificates
-- It's complex to configure in a Docker template
+LiveKit is available as a **separate blueprint** in this repository. See [Part 2: Enable Video Calls](#part-2-enable-video-calls-optional) above for deployment instructions.
 
-For video calls, you would need to:
-1. Deploy LiveKit separately
-2. Set `LIVEKIT_HOST`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` in the love service
-3. Configure firewall rules for ports 7880, 7881, 5349, 3478, 50000-60000
+The two stacks communicate via the shared `huly_net` Docker network. LiveKit joins this network with the alias `livekit`, so Huly's `love-agent` can reach it at `ws://livekit:7880`.
 
 ## Optional: GitHub Integration
 
@@ -392,7 +400,7 @@ If you have LiveKit configured for video calls, Huly can transcribe meeting audi
 | `STT_URL` | *(empty)* | Custom Whisper endpoint (only for `openai` provider). Leave empty for OpenAI cloud. Set for self-hosted (e.g., `http://your-whisper:9007`) |
 | `STT_API_KEY` | *(empty)* | API key for your STT provider. For `openai`: your OpenAI key. For `deepgram`: your Deepgram key |
 | `STT_MODEL` | `whisper-1` / `nova-2` | Model to use. `whisper-1` for OpenAI, `nova-2` for Deepgram |
-| `LOVE_AGENT_STT_PROVIDER` | `stream` | **Do not change.** The intabiafusion fork only supports `stream` mode |
+| `LOVE_AGENT_STT_PROVIDER` | `stream` | **Do not change.** The haiodo fork only supports `stream` mode |
 
 **Example — Use OpenAI Whisper (same key as AI assistant):**
 ```
@@ -441,8 +449,7 @@ Check that all services are on the same Docker network. Dokploy should handle th
 ## Credits
 
 - **Original Huly**: https://github.com/hcengineering/huly
-- **PostgreSQL Fork**: https://github.com/intabia-fusion/foundation-selfhost — This template uses the intabia-fusion fork of Huly that replaces CockroachDB with PostgreSQL, making self-hosting simpler and more resource-friendly.
-- **Docker Images** (`intabiafusion/*`): https://github.com/intabia-fusion
+- **PostgreSQL Fork**: https://github.com/intabia-fusion/foundation-selfhost — This template uses the intabia-fusion fork of Huly that replaces CockroachDB with PostgreSQL, making self-hosting simpler and more resource-friendly. Docker images are published as `haiodo/*` on Docker Hub.
 - **Dokploy Template**: Created to help non-developers deploy Huly without headaches. If it helps you, give it a star!
 
 ## License

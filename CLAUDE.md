@@ -2,24 +2,53 @@
 
 ## Project Overview
 
-Dokploy blueprint template for self-hosting [Huly V7](https://huly.io/) — an all-in-one project management platform. The template's core value is a **session persistence fix** that prevents the logout-on-refresh bug in Huly V7 behind reverse proxies.
+Dokploy blueprint templates for self-hosting [Huly V7](https://huly.io/) — an all-in-one project management platform. The template's core value is a **session persistence fix** that prevents the logout-on-refresh bug in Huly V7 behind reverse proxies.
 
-Forked from `shali1995/huly-dokploy-fucking-working`. All Huly Docker images are from the [intabia-fusion/foundation-selfhost](https://github.com/intabia-fusion/foundation-selfhost) PostgreSQL fork (replaces CockroachDB), published as `intabiafusion/*` on Docker Hub.
+Forked from `shali1995/huly-dokploy-fucking-working`. Huly Docker images use `haiodo/*` from the [intabia-fusion/foundation-selfhost](https://github.com/intabia-fusion/foundation-selfhost) PostgreSQL fork (replaces CockroachDB). The `intabiafusion/*` images exist but aren't production-ready yet — we track `haiodo/*` to match their actual upstream compose.
 
 ## Repository Structure
 
 ```
-meta.json                              # Blueprint registry: id, name, version, description, tags
+meta.json                              # Blueprint registry: two entries (huly-v7, livekit)
 README.md                              # User-facing deployment guide
 blueprints/huly-v7/
   template.toml                        # Dokploy template: variables, env, domains, mounted files
   docker-compose.yml                   # 28 services orchestration
   huly.svg                             # Logo for Dokploy UI
+blueprints/livekit/
+  template.toml                        # LiveKit template: variables, env, domains, config mount
+  docker-compose.yml                   # LiveKit server + Redis
+  livekit.svg                          # Logo for Dokploy UI
 ```
 
-`template.toml` is the single source of truth — it contains the nginx config and entrypoint script as inline `[[config.mounts]]` entries. There are no separate nginx.conf or entrypoint.sh files.
+`template.toml` is the single source of truth for each blueprint — it contains the nginx config and entrypoint script (huly-v7) or livekit.yaml (livekit) as inline `[[config.mounts]]` entries.
 
 ## Architecture
+
+### Multi-Blueprint Design
+
+Two separate Dokploy blueprints communicate via a **named Docker network** (`huly_net`):
+
+- **huly-v7**: Main Huly stack. Creates `huly_net` (non-external, `name: huly_net`).
+- **livekit**: LiveKit WebRTC server. Joins `huly_net` as external with alias `livekit`.
+
+Deployment order: **Huly first** (creates `huly_net`), then **LiveKit** (joins it).
+
+### Network Architecture
+
+```
+                  huly_net (named Docker bridge)
+                  ┌──────────────────────────────┐
+                  │                              │
+  ┌───────────────┴──────────────┐  ┌────────────┴──────────┐
+  │  Huly Stack (huly-v7)        │  │  LiveKit Stack         │
+  │                              │  │                        │
+  │  nginx → all services        │  │  livekit (alias on     │
+  │  postgres, redis, redpanda   │  │    huly_net: "livekit")│
+  │  minio, elastic              │  │  redis (internal)      │
+  │  love-agent → livekit:7880   │  │                        │
+  └──────────────────────────────┘  └────────────────────────┘
+```
 
 ### Service Layers
 
@@ -45,6 +74,7 @@ The logout-on-refresh bug happens because Huly V7's account service sets cookies
 
 Dokploy auto-generates secrets at deploy time via `template.toml` `[variables]`:
 
+**Huly (huly-v7):**
 ```
 main_domain   = "${domain}"        → HOST_ADDRESS, all public URLs
 huly_secret   = "${base64:64}"     → SECRET (JWT signing, inter-service auth)
@@ -52,7 +82,14 @@ postgres_password = "${password:32}" → POSTGRES_PASSWORD, CR_DB_URL
 redpanda_password = "${password:16}" → REDPANDA_ADMIN_PWD
 ```
 
-These feed into `[config] env` which becomes the `.env` for docker-compose. The `${HULY_VERSION}` variable (currently `v0.7.331`) pins all `intabiafusion/*` image tags.
+**LiveKit:**
+```
+livekit_domain    = "${domain}"       → LIVEKIT_DOMAIN
+livekit_api_key   = "${password:16}"  → LIVEKIT_API_KEY
+livekit_api_secret = "${base64:32}"   → LIVEKIT_API_SECRET
+```
+
+These feed into `[config] env` which becomes the `.env` for docker-compose. The `${HULY_VERSION}` variable (currently `v0.7.315`) pins all `haiodo/*` image tags.
 
 ## Key Configuration
 
@@ -61,7 +98,7 @@ These feed into `[config] env` which becomes the `.env` for docker-compose. The 
 - `MAIL_FROM`, `SMTP_HOST`, `SMTP_USERNAME`, `SMTP_PASSWORD` — SMTP config for OTP login emails (or use SES_* vars for Amazon SES)
 
 ### Optional
-- `LIVEKIT_HOST`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` — video calls (LiveKit deployed separately)
+- `LIVEKIT_HOST`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET` — video calls (LiveKit deployed as separate blueprint)
 - `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`, `OPENAI_SUMMARY_MODEL`, `OPENAI_TRANSLATE_MODEL` — AI assistant (any OpenAI-compatible provider)
 - `STT_PROVIDER`, `STT_URL`, `STT_API_KEY`, `STT_MODEL` — Speech-to-Text for AI voice features
 - `GITHUB_APPID`, `GITHUB_CLIENTID`, `GITHUB_CLIENT_SECRET`, `GITHUB_PRIVATE_KEY`, `GITHUB_BOT_NAME` — GitHub integration
@@ -76,7 +113,7 @@ These feed into `[config] env` which becomes the `.env` for docker-compose. The 
 ## Common Tasks
 
 ### Update Huly version
-Change `HULY_VERSION=v0.7.331` in `template.toml` line 9 and `meta.json` version field. All 21 `intabiafusion/*` services use this single variable.
+Change `HULY_VERSION=v0.7.315` in `template.toml` line 9 and `meta.json` version field. All 21 `haiodo/*` services use this single variable.
 
 ### Add/modify a service
 1. Add the service in `blueprints/huly-v7/docker-compose.yml`
@@ -99,12 +136,11 @@ Note: The entrypoint.sh and nginx config are embedded in template.toml as `[[con
 | Service | Reason |
 |---------|--------|
 | Calendar | Requires MongoDB + KVS (new infrastructure). Deferred to future. |
-| LiveKit (embedded) | `network_mode: host` incompatible with Dokploy. Keep as separate deploy. |
 | Gmail/Telegram | Advanced integrations requiring external credentials. Future phase. |
 
 ## Upstream References
 
 - **Huly (original)**: https://github.com/hcengineering/huly
 - **PostgreSQL fork**: https://github.com/intabia-fusion/foundation-selfhost
-- **Docker images** (`intabiafusion/*`): https://github.com/intabia-fusion
+- **Docker images** (`haiodo/*`): https://hub.docker.com/u/haiodo
 - **Huly docs**: https://huly.io/docs/self-hosting

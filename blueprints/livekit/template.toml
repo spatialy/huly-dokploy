@@ -1,0 +1,43 @@
+[variables]
+livekit_domain = "${domain}"
+livekit_api_key = "${password:16}"
+livekit_api_secret = "${base64:32}"
+
+[config]
+env = [
+  "DOCKER_NAME=livekit",
+  "LIVEKIT_DOMAIN=${livekit_domain}",
+  "LIVEKIT_API_KEY=${livekit_api_key}",
+  "LIVEKIT_API_SECRET=${livekit_api_secret}",
+]
+
+[[config.domains]]
+serviceName = "livekit"
+port = 7880
+host = "${livekit_domain}"
+
+[[config.mounts]]
+filePath = "/volumes/livekit/livekit.yaml"
+content = """
+port: 7880
+bind_addresses:
+  - 0.0.0.0
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50100
+  use_external_ip: true
+  enable_loopback_candidate: false
+redis:
+  address: redis:6379
+turn:
+  enabled: true
+  domain: ${LIVEKIT_DOMAIN}
+  udp_port: 3478
+  external_tls: true
+keys:
+  ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
+logging:
+  json: false
+  level: info
+"""

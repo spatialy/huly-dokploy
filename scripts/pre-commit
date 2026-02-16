@@ -1,0 +1,38 @@
+#!/bin/bash
+# Pre-commit hook: auto-bumps template patch version when blueprint files change.
+# Skips if VERSION/meta.json/TEMPLATE_VERSION are already staged (manual bump).
+#
+# Install: ./scripts/install-hooks.sh
+
+set -euo pipefail
+
+# Files that trigger an auto-bump
+WATCHED_FILES=(
+  "blueprints/huly-v7/template.toml"
+  "blueprints/huly-v7/docker-compose.yml"
+)
+
+# Skip if the bump script itself already staged version files (manual bump)
+STAGED=$(git diff --cached --name-only)
+if echo "$STAGED" | grep -q '^VERSION$'; then
+  exit 0
+fi
+
+# Check if any watched file is in the staged changes
+NEEDS_BUMP=false
+for f in "${WATCHED_FILES[@]}"; do
+  if echo "$STAGED" | grep -qF "$f"; then
+    NEEDS_BUMP=true
+    break
+  fi
+done
+
+if [ "$NEEDS_BUMP" = false ]; then
+  exit 0
+fi
+
+echo "[pre-commit] Blueprint files changed — auto-bumping template patch version..."
+./scripts/bump-version.sh patch
+
+# Stage the version files that bump-version.sh modified
+git add VERSION meta.json blueprints/huly-v7/template.toml

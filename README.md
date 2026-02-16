@@ -140,14 +140,14 @@ Video calls require LiveKit, deployed as a separate blueprint that connects to H
 
 ### Step 1: Deploy LiveKit
 
-1. In Dokploy, create a **new project** (e.g., "LiveKit")
-2. Click create service and select **template**
-3. Use the same template repository URL: `https://raw.githubusercontent.com/spatialy/huly-dokploy/main`
-4. Select the **LiveKit (for Huly)** template
-5. Go to **Domains** tab:
-   - Change the domain to your LiveKit domain (e.g., `livekit.dynu.net`)
+1. In Dokploy, click create project, call it something like "LiveKit", and click create.
+Then click create service and select template.
+Go to **Templates** and add the same repository URL: `https://raw.githubusercontent.com/spatialy/huly-dokploy/main`
+Select the **LiveKit (for Huly)** template and click create.
+2. Go to **Domains** tab:
+   - Change the domain from the auto-generated one to your LiveKit domain (e.g., `livekit.dynu.net`)
    - Enable **HTTPS**
-6. Click **Deploy**
+3. Click **Deploy**
 
 ### Step 2: Connect Huly to LiveKit
 

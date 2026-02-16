@@ -145,6 +145,17 @@ If you're using a cloud provider (AWS, Hetzner, DigitalOcean, etc.), make sure t
 - Wait 1-2 minutes for DNS to propagate before deploying
 - If something doesn't work, try redeploying
 
+### Template Versioning
+
+This template tracks **two independent versions**:
+
+| Version | What | Example |
+|---------|------|---------|
+| **Template version** | Our blueprint changes (fixes, config improvements) | `v1.1.0` (shown as badge in Dokploy template picker) |
+| **Huly version** | Upstream `haiodo/*` Docker image tags | `v0.7.315` (shown in description) |
+
+**Dokploy bakes templates at deploy time.** Pushing updates to this repo does NOT update existing deployments. To check which version you deployed, look for `TEMPLATE_VERSION` in your Dokploy **Environment** tab. To upgrade, delete the compose service and redeploy from the template (Docker volumes are preserved, so your data stays).
+
 ---
 
 ## Troubleshooting
@@ -382,6 +393,48 @@ Postgres needs time to initialize. The template includes health checks, but if y
 ### Services not starting
 
 Check that all services are on the same Docker network. Dokploy should handle this automatically.
+
+## Development
+
+### Setup
+
+```bash
+git clone https://github.com/spatialy/huly-dokploy.git
+cd huly-dokploy
+./scripts/install-hooks.sh   # Install pre-commit hook for auto version bumping
+```
+
+### Version Bumping
+
+A **pre-commit hook** automatically bumps the template patch version whenever you commit changes to blueprint files (`template.toml`, `docker-compose.yml`). The hook updates `VERSION`, `meta.json`, and `TEMPLATE_VERSION` in `template.toml`, then stages them into your commit.
+
+For manual or larger bumps:
+
+```bash
+./scripts/bump-version.sh patch           # v1.1.0 -> v1.1.1 (auto on commit)
+./scripts/bump-version.sh minor           # v1.1.0 -> v1.2.0
+./scripts/bump-version.sh major           # v1.1.0 -> v2.0.0
+./scripts/bump-version.sh huly v0.7.320   # Update Huly images + auto patch bump
+```
+
+The `huly` subcommand updates `HULY_VERSION` in `template.toml`, syncs the Huly version into the `meta.json` description, and auto-bumps the template patch version.
+
+### File Structure
+
+```
+VERSION                            # Template semver (single source of truth)
+meta.json                          # Dokploy blueprint registry (version badge + description)
+scripts/
+  bump-version.sh                  # Bump template or Huly version across all files
+  pre-commit                       # Git hook: auto patch bump on blueprint changes
+  install-hooks.sh                 # Install git hooks after cloning
+blueprints/huly-v7/
+  template.toml                    # Dokploy template (env vars, mounts, domains)
+  docker-compose.yml               # 29 services orchestration
+  huly.svg                         # Logo for Dokploy UI
+```
+
+---
 
 ## Credits
 

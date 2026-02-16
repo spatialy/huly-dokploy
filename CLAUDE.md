@@ -9,8 +9,10 @@ Forked from `shali1995/huly-dokploy-fucking-working`. Huly Docker images use `ha
 ## Repository Structure
 
 ```
+VERSION                                # Template semver (single source of truth)
 meta.json                              # Blueprint registry: single entry (huly-v7)
 README.md                              # User-facing deployment guide
+scripts/bump-version.sh                # Bump template version across all files
 blueprints/huly-v7/
   template.toml                        # Dokploy template: variables, env, domains, mounted files
   docker-compose.yml                   # 29 services orchestration (including LiveKit)
@@ -71,7 +73,7 @@ livekit_api_key   = "${password:16}"   → LIVEKIT_API_KEY
 livekit_api_secret = "${base64:32}"    → LIVEKIT_API_SECRET
 ```
 
-These feed into `[config] env` which becomes the `.env` for docker-compose. The `${HULY_VERSION}` variable (currently `v0.7.315`) pins all `haiodo/*` image tags.
+These feed into `[config] env` which becomes the `.env` for docker-compose. The `${HULY_VERSION}` variable (currently `v0.7.315`) pins all `haiodo/*` image tags. The `TEMPLATE_VERSION` env var tracks our template's own semver (separate from upstream Huly).
 
 ## Key Configuration
 
@@ -96,8 +98,23 @@ These feed into `[config] env` which becomes the `.env` for docker-compose. The 
 
 ## Common Tasks
 
-### Update Huly version
-Change `HULY_VERSION=v0.7.315` in `template.toml` line 11 and `meta.json` version field. All 21 `haiodo/*` services use this single variable.
+### Versioning
+
+Two independent versions are tracked:
+
+| Version | What it tracks | Where it lives |
+|---------|---------------|----------------|
+| **Template version** (`v1.1.0`) | Our blueprint/template changes | `VERSION`, `meta.json`, `template.toml` `TEMPLATE_VERSION` |
+| **Huly version** (`v0.7.315`) | Upstream haiodo/* Docker image tags | `template.toml` `HULY_VERSION`, `meta.json` description |
+
+Bump the template version: `./scripts/bump-version.sh [major|minor|patch]`
+
+This updates `VERSION`, `meta.json` version badge, and `template.toml` `TEMPLATE_VERSION` env var. The version badge shows in Dokploy's template picker UI.
+
+**Important**: Dokploy bakes templates at deploy time. Pushing changes here does NOT update existing deployments. Users must delete and redeploy to pick up new template versions. The `TEMPLATE_VERSION` env var in their Dokploy env panel tells them which version they deployed.
+
+### Update Huly upstream version
+Change `HULY_VERSION=v0.7.315` in `template.toml` and update the Huly version reference in `meta.json` description. All 21 `haiodo/*` services use this single variable. Then bump the template version too.
 
 ### Add/modify a service
 1. Add the service in `blueprints/huly-v7/docker-compose.yml`

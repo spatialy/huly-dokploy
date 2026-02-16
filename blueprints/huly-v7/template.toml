@@ -9,6 +9,7 @@ livekit_api_secret = "${base64:32}"
 [config]
 env = [
   "HULY_VERSION=v0.7.315",
+  "TEMPLATE_VERSION=v1.1.0",
   "DOCKER_NAME=huly_v7",
   "HOST_ADDRESS=${main_domain}",
   "SECRET=${huly_secret}",

@@ -88,6 +88,20 @@ services:
     image: redis:8.0.2-alpine3.21
     restart: unless-stopped
 
+  livekit:
+    image: livekit/livekit-server:latest
+    command: --config /etc/livekit.yaml
+    depends_on:
+      redis:
+        condition: service_started
+    ports:
+      - "7881:7881"
+      - "3478:3478/udp"
+      - "50000-50100:50000-50100/udp"
+    volumes:
+      - ../files/volumes/livekit/livekit.yaml:/etc/livekit.yaml:ro
+    restart: unless-stopped
+
   rekoni:
     image: haiodo/rekoni-service:${HULY_VERSION}
     environment:
@@ -240,7 +254,7 @@ services:
       - GITHUB_URL=https://${HOST_ADDRESS}/_github
       - AI_URL=https://${HOST_ADDRESS}/_ai
       - BILLING_URL=https://${HOST_ADDRESS}/_billing
-      - LIVEKIT_WS=wss://${LIVEKIT_HOST:-}
+      - LIVEKIT_WS=wss://${HOST_ADDRESS}/livekit
     restart: unless-stopped
 
   datalake:
@@ -376,9 +390,9 @@ services:
       - S3_STORAGE_CONFIG=s3|http://minio:9000?accessKey=minioadmin&secretKey=minioadmin
       - STORAGE_PROVIDER_NAME=minio
       - BILLING_URL=http://billing:4042
-      - LIVEKIT_HOST=https://${LIVEKIT_HOST:-}
-      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-devkey}
-      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-devsecret}
+      - LIVEKIT_HOST=ws://livekit:7880
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
     restart: unless-stopped
 
   love-agent:
@@ -391,8 +405,8 @@ services:
       - SERVER_SECRET=${SECRET}
       - PLATFORM_URL=http://aibot:4011
       - LIVEKIT_URL=ws://livekit:7880
-      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-devkey}
-      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-devsecret}
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
       - STT_PROVIDER=${LOVE_AGENT_STT_PROVIDER:-stream}
       - DEBUG=${LOVE_AGENT_DEBUG:-false}
     restart: unless-stopped
@@ -449,7 +463,3 @@ volumes:
   files:
   postgres_data:
   redpanda:
-
-networks:
-  default:
-    name: huly_net

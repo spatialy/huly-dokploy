@@ -3,7 +3,7 @@
         "id": "huly-v7",
         "name": "Huly V7 (by spatialy)",
         "version": "0.7.315",
-        "description": "All-in-one project management platform with fixed session persistence. Includes task management, team collaboration, real-time editing, and more.",
+        "description": "All-in-one project management platform with fixed session persistence. Includes task management, team collaboration, real-time editing, video calls (LiveKit built-in), and more.",
         "logo": "huly.svg",
         "links": {
             "github": "https://github.com/hcengineering/huly",
@@ -16,24 +16,6 @@
             "task-management",
             "team",
             "productivity"
-        ]
-    },
-    {
-        "id": "livekit",
-        "name": "LiveKit (for Huly)",
-        "version": "1.0.0",
-        "description": "LiveKit WebRTC server for Huly video calls. Deploy alongside Huly via shared Docker network.",
-        "logo": "livekit.svg",
-        "links": {
-            "github": "https://github.com/livekit/livekit",
-            "website": "https://livekit.io/",
-            "docs": "https://docs.livekit.io/"
-        },
-        "tags": [
-            "video-calls",
-            "webrtc",
-            "livekit",
-            "communication"
         ]
     }
 ]

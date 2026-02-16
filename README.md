@@ -2,7 +2,7 @@
 
 ---
 
-## Prerequisites: Get Your Server IP and Create Domains
+## Prerequisites: Get Your Server IP and Create a Domain
 
 ### Step 1: Find Your Server IP
 
@@ -12,7 +12,7 @@ curl ifconfig.me
 ```
 This will show your server IP (example: `88.222.521.3`). Write it down - you'll need it.
 
-### Step 2: Create Free Domains
+### Step 2: Create a Free Domain
 
 1. Go to https://www.dynu.com/ and create an account
 2. Go to **Control Panel**
@@ -26,20 +26,12 @@ This will show your server IP (example: `88.222.521.3`). Write it down - you'll 
 4. Replace it with YOUR server IP (e.g., `88.222.521.3`)
 5. Click **Save**
 
-**Create LiveKit Domain (for video calls):**
-1. Click **Add** again
-2. Enter a name like `livekit`
-3. Click **Add**
-4. Replace the **IPv4 Address** with YOUR server IP
-5. Click **Save**
-
-Now you have 2 domains:
-- `huly.dynu.net` → points to your server
-- `livekit.dynu.net` → points to your server
+Now you have a domain:
+- `huly.dynu.net` -> points to your server
 
 ---
 
-## Part 1: Deploy Huly
+## Deploy Huly
 
 1. In Dokploy, click create project, call it something like "Huly", and click create.
 Then click create service and select template.
@@ -56,7 +48,7 @@ Then click create.
    - Enable **HTTPS**
 5. Click **Deploy**
 
-**Huly is now running!** This creates the `huly_net` Docker network that LiveKit will join later.
+**Huly is now running!** Video calls (LiveKit) are built-in and work automatically -- API keys are auto-generated at deploy time.
 
 > **Important:** Huly v0.7.315 uses OTP (email code) as the default login method. You **must** configure SMTP for email delivery, otherwise users won't receive login codes. Password login is also available as a fallback (click "Sign in with password" on the login page).
 
@@ -115,7 +107,7 @@ SES_REGION=us-east-1
    Name it `HulySESSendEmail` and attach it to the user
 5. Go to the user > **Security credentials** > **Create access key**
 6. Select **Application running outside AWS**
-7. Copy the **Access key ID** → `SES_ACCESS_KEY` and **Secret access key** → `SES_SECRET_KEY`
+7. Copy the **Access key ID** -> `SES_ACCESS_KEY` and **Secret access key** -> `SES_SECRET_KEY`
 
 #### 3. Set the Huly env vars
 
@@ -132,76 +124,25 @@ Click **Save** and **Redeploy**.
 
 ---
 
-## Part 2: Enable Video Calls (Optional)
+## Firewall Requirements (for Video Calls)
 
-Video calls require LiveKit, deployed as a separate blueprint that connects to Huly via a shared Docker network (`huly_net`).
+LiveKit is built into the Huly stack. WebSocket signaling goes through nginx on the same domain (`wss://huly.example.com/livekit`), but media/TURN traffic requires these ports to be open on your server's firewall:
 
-> **Deployment order matters:** Deploy Huly first (it creates `huly_net`), then deploy LiveKit (it joins `huly_net`).
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| 7881 | TCP | LiveKit RTC (WebRTC over TCP) |
+| 3478 | UDP | TURN server |
+| 50000-50100 | UDP | Media (WebRTC audio/video) |
 
-### Step 1: Deploy LiveKit
-
-1. In Dokploy, click create project, call it something like "LiveKit", and click create.
-Then click create service and select template.
-Go to **Templates** and add the same repository URL: `https://raw.githubusercontent.com/spatialy/huly-dokploy/main`
-Select the **LiveKit (for Huly)** template and click create.
-2. Go to **Domains** tab:
-   - Change the domain from the auto-generated one to your LiveKit domain (e.g., `livekit.dynu.net`)
-   - Enable **HTTPS**
-3. Click **Deploy**
-
-### Step 2: Connect Huly to LiveKit
-
-1. In Dokploy, go to your **LiveKit** app
-2. Go to **Environment** tab
-3. Find and copy these values:
-   ```
-   LIVEKIT_API_KEY=<your_generated_key>
-   LIVEKIT_API_SECRET=<your_generated_secret>
-   ```
-
-4. Go back to your **Huly** app
-5. Go to **Environment** tab
-6. Find these fields and update them:
-   ```
-   LIVEKIT_HOST=livekit.dynu.net
-   LIVEKIT_API_KEY=<paste your API_KEY here>
-   LIVEKIT_API_SECRET=<paste your API_SECRET here>
-   ```
-
-7. Click **Save** and **Redeploy**
-
-**Video calls are now enabled!**
-
-### Network Architecture
-
-```
-                  huly_net (named Docker bridge)
-                  ┌──────────────────────────────┐
-                  │                              │
-  ┌───────────────┴──────────────┐  ┌────────────┴──────────┐
-  │  Huly Stack (huly-v7)        │  │  LiveKit Stack         │
-  │                              │  │                        │
-  │  nginx → all services        │  │  livekit (alias on     │
-  │  postgres, redis, redpanda   │  │    huly_net: "livekit")│
-  │  minio, elastic              │  │  redis (internal)      │
-  │  love-agent → livekit:7880   │  │                        │
-  └──────────────────────────────┘  └────────────────────────┘
-```
-
-- Huly creates `huly_net` (named network)
-- LiveKit joins `huly_net` as external
-- `love-agent` reaches LiveKit at `ws://livekit:7880` via the shared network
-- `love` (front-facing) uses the public URL `wss://<livekit-domain>` for browser WebRTC
+If you're using a cloud provider (AWS, Hetzner, DigitalOcean, etc.), make sure these ports are allowed in your security group / firewall rules.
 
 ---
 
 ## Important Notes
 
-- You need **2 separate subdomains**: one for Huly, one for LiveKit
-- Both domains must point to your server IP
-- HTTPS must be enabled on both domains
+- You need only **1 domain** -- LiveKit is built-in and shares the same domain
+- HTTPS must be enabled on your domain
 - Wait 1-2 minutes for DNS to propagate before deploying
-- Deploy **Huly first**, then **LiveKit** (Huly creates the shared network)
 - If something doesn't work, try redeploying
 
 ---
@@ -214,10 +155,9 @@ Select the **LiveKit (for Huly)** template and click create.
 - Redeploy the app
 
 ### Video calls not working
-- Verify LiveKit was deployed **after** Huly (it needs `huly_net` to exist)
-- Check that LIVEKIT_HOST, LIVEKIT_API_KEY, and LIVEKIT_API_SECRET are correct in Huly's environment
-- Make sure your LiveKit domain has HTTPS enabled
-- Make sure your LiveKit domain is different from your Huly domain
+- Check that ports 7881/tcp, 3478/udp, and 50000-50100/udp are open on your server firewall
+- Verify `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` are set in the environment (auto-generated at deploy time)
+- Try redeploying
 
 ### 502 Bad Gateway
 - Wait a few seconds and refresh
@@ -256,11 +196,12 @@ This makes the template **zero-config** - you just set your domain and it works!
 | Service | Version | Description |
 |---------|---------|-------------|
 | postgres | 18.1 | Database |
-| redis | 8.0 | Cache for hulypulse |
+| redis | 8.0 | Cache for hulypulse and LiveKit |
 | redpanda | v25.2.11 | Message queue (Kafka compatible) |
 | minio | latest | Object storage |
 | elastic | 7.14.2 | Search engine |
 | nginx | 1.21.3 | Reverse proxy with cookie fixes |
+| livekit | latest | WebRTC server for video calls |
 | account | v0.7.315 | Account management |
 | transactor | v0.7.315 | Data synchronization |
 | collaborator | v0.7.315 | Real-time collaboration |
@@ -312,12 +253,8 @@ The template auto-generates these values:
 | `huly_secret` | base64:64 | Secret for JWT tokens |
 | `postgres_password` | password:32 | PostgreSQL password |
 | `redpanda_password` | password:16 | Redpanda admin password |
-
-## Optional: LiveKit (Video Calls)
-
-LiveKit is available as a **separate blueprint** in this repository. See [Part 2: Enable Video Calls](#part-2-enable-video-calls-optional) above for deployment instructions.
-
-The two stacks communicate via the shared `huly_net` Docker network. LiveKit joins this network with the alias `livekit`, so Huly's `love-agent` can reach it at `ws://livekit:7880`.
+| `livekit_api_key` | password:16 | LiveKit API key (for video calls) |
+| `livekit_api_secret` | base64:32 | LiveKit API secret (for video calls) |
 
 ## Optional: GitHub Integration
 
@@ -330,7 +267,7 @@ The GitHub service is included but dormant by default. To enable it:
 3. Set **Setup URL**: `https://{your-domain}/github` (check "Redirect on update")
 4. Set **Webhook URL**: `https://{your-domain}/_github/api/webhook`
 5. Set **Webhook secret**: `secret`
-6. **Permissions** — set all to Read & Write:
+6. **Permissions** -- set all to Read & Write:
    - Commit statuses, Contents, Custom properties, Discussions
    - Issues, Pages, Projects, Pull requests, Webhooks
    - Metadata: Read-only
@@ -359,7 +296,7 @@ GITHUB_BOT_NAME=my-huly-app[bot]
 
 ## Optional: AI Assistant
 
-The AI bot service is included but **requires `OPENAI_API_KEY` to start**. Without a valid API key, the aibot container will crash-loop — this is expected and won't affect the rest of Huly (nginx is configured to handle optional services being down).
+The AI bot service is included but **requires `OPENAI_API_KEY` to start**. Without a valid API key, the aibot container will crash-loop -- this is expected and won't affect the rest of Huly (nginx is configured to handle optional services being down).
 
 To enable the AI assistant, set these in your Huly app's **Environment** tab:
 
@@ -371,14 +308,14 @@ To enable the AI assistant, set these in your Huly app's **Environment** tab:
 | `OPENAI_SUMMARY_MODEL` | No | Model for summarization (default: `gpt-4o-mini`) |
 | `OPENAI_TRANSLATE_MODEL` | No | Model for translation (default: `gpt-4o-mini`) |
 
-**Example — OpenAI:**
+**Example -- OpenAI:**
 ```
 OPENAI_API_KEY=sk-proj-...
 OPENAI_MODEL=gpt-4o
 OPENAI_SUMMARY_MODEL=gpt-4o-mini
 ```
 
-**Example — Ollama (local):**
+**Example -- Ollama (local):**
 ```
 OPENAI_API_KEY=ollama
 OPENAI_BASE_URL=http://host.docker.internal:11434/v1
@@ -392,29 +329,29 @@ The bot provides: chat, text translation, message/meeting summarization, and PDF
 
 ### Speech-to-Text (STT) for Video Calls
 
-If you have LiveKit configured for video calls, Huly can transcribe meeting audio in real-time. The **love-agent** captures audio from LiveKit and sends chunks to the **aibot** for transcription.
+Huly can transcribe meeting audio in real-time. The **love-agent** captures audio from LiveKit and sends chunks to the **aibot** for transcription.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `STT_PROVIDER` | *(empty — disabled)* | Transcription backend: `openai` (Whisper API), `deepgram`, or `server` |
+| `STT_PROVIDER` | *(empty -- disabled)* | Transcription backend: `openai` (Whisper API), `deepgram`, or `server` |
 | `STT_URL` | *(empty)* | Custom Whisper endpoint (only for `openai` provider). Leave empty for OpenAI cloud. Set for self-hosted (e.g., `http://your-whisper:9007`) |
 | `STT_API_KEY` | *(empty)* | API key for your STT provider. For `openai`: your OpenAI key. For `deepgram`: your Deepgram key |
 | `STT_MODEL` | `whisper-1` / `nova-2` | Model to use. `whisper-1` for OpenAI, `nova-2` for Deepgram |
 | `LOVE_AGENT_STT_PROVIDER` | `stream` | **Do not change.** The haiodo fork only supports `stream` mode |
 
-**Example — Use OpenAI Whisper (same key as AI assistant):**
+**Example -- Use OpenAI Whisper (same key as AI assistant):**
 ```
 STT_PROVIDER=openai
 ```
-(Uses `OPENAI_API_KEY` automatically — no need to set `STT_API_KEY` separately if already configured)
+(Uses `OPENAI_API_KEY` automatically -- no need to set `STT_API_KEY` separately if already configured)
 
-**Example — Use Deepgram:**
+**Example -- Use Deepgram:**
 ```
 STT_PROVIDER=deepgram
 STT_API_KEY=your-deepgram-api-key
 ```
 
-**Example — Self-hosted Whisper (faster-whisper, etc.):**
+**Example -- Self-hosted Whisper (faster-whisper, etc.):**
 ```
 STT_PROVIDER=openai
 STT_URL=http://your-whisper-server:9007
@@ -435,7 +372,7 @@ If you're still being logged out on refresh:
    You should see the parent domain being calculated
 
 2. Verify the cookie domain in browser dev tools:
-   - Open F12 → Application → Cookies
+   - Open F12 -> Application -> Cookies
    - Check that cookies have the correct domain
 
 ### Database connection errors
@@ -449,7 +386,7 @@ Check that all services are on the same Docker network. Dokploy should handle th
 ## Credits
 
 - **Original Huly**: https://github.com/hcengineering/huly
-- **PostgreSQL Fork**: https://github.com/intabia-fusion/foundation-selfhost — This template uses the intabia-fusion fork of Huly that replaces CockroachDB with PostgreSQL, making self-hosting simpler and more resource-friendly. Docker images are published as `haiodo/*` on Docker Hub.
+- **PostgreSQL Fork**: https://github.com/intabia-fusion/foundation-selfhost -- This template uses the intabia-fusion fork of Huly that replaces CockroachDB with PostgreSQL, making self-hosting simpler and more resource-friendly. Docker images are published as `haiodo/*` on Docker Hub.
 - **Dokploy Template**: Created to help non-developers deploy Huly without headaches. If it helps you, give it a star!
 
 ## License

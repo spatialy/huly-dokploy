@@ -3,6 +3,8 @@ main_domain = "${domain}"
 huly_secret = "${base64:64}"
 postgres_password = "${password:32}"
 redpanda_password = "${password:16}"
+livekit_api_key = "${password:16}"
+livekit_api_secret = "${base64:32}"
 
 [config]
 env = [
@@ -21,10 +23,9 @@ env = [
   "REDPANDA_ADMIN_USER=admin",
   "REDPANDA_ADMIN_PWD=${redpanda_password}",
   "PLATFORM_ADMIN_EMAILS=",
-  "# LiveKit Configuration (optional - for video calls)",
-  "LIVEKIT_HOST=",
-  "LIVEKIT_API_KEY=devkey",
-  "LIVEKIT_API_SECRET=devsecret",
+  "# LiveKit Configuration (built-in - auto-generated keys)",
+  "LIVEKIT_API_KEY=${livekit_api_key}",
+  "LIVEKIT_API_SECRET=${livekit_api_secret}",
   "# OpenAI Configuration (optional - for AI assistant)",
   "OPENAI_API_KEY=",
   "OPENAI_BASE_URL=",
@@ -302,5 +303,48 @@ server {
         rewrite ^/_billing(/.*)$ $1 break;
         proxy_pass http://billing:4042/;
     }
+
+    # LiveKit signaling (WebSocket)
+    location /livekit/ {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+        proxy_buffering off;
+        proxy_pass http://livekit:7880/;
+    }
 }
+"""
+
+# LiveKit server configuration
+[[config.mounts]]
+filePath = "/volumes/livekit/livekit.yaml"
+content = """
+port: 7880
+bind_addresses:
+  - 0.0.0.0
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 50100
+  use_external_ip: true
+  enable_loopback_candidate: false
+redis:
+  address: redis:6379
+turn:
+  enabled: true
+  domain: ${HOST_ADDRESS}
+  udp_port: 3478
+  external_tls: true
+keys:
+  ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
+logging:
+  json: false
+  level: info
 """

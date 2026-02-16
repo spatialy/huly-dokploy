@@ -339,11 +339,11 @@ redis:
   address: redis:6379
 turn:
   enabled: true
-  domain: ${HOST_ADDRESS}
+  domain: ${main_domain}
   udp_port: 3478
   external_tls: true
 keys:
-  ${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}
+  ${livekit_api_key}: ${livekit_api_secret}
 logging:
   json: false
   level: info

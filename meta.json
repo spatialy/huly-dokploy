@@ -21,7 +21,7 @@
     {
         "id": "huly-v7-next",
         "name": "Huly V7 Next (by spatialy)",
-        "version": "v3.0.0",
+        "version": "v3.0.1",
         "description": "All-in-one project management (Huly v0.7.353, official hardcoreeng images on CockroachDB). Session persistence fix, LiveKit video, AI assistant, Calendar/Gmail/Telegram integrations.",
         "logo": "huly.svg",
         "links": {

@@ -174,6 +174,10 @@ This template tracks **two independent versions**:
 - Verify `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` are set in the environment (auto-generated at deploy time)
 - Try redeploying
 
+### Sign Up shows error (V7 Next only)
+- **This is cosmetic.** In v0.7.353, signup creates your account but does not return a login token. The frontend tries to set a session cookie and fails, showing "Unknown error: Unexpected token...".
+- **Your account was created.** Go to the **Sign In** page, enter your email/password, and complete the OTP email verification to log in.
+
 ### 502 Bad Gateway
 - Wait a few seconds and refresh
 - If persists, go to Deployments tab and redeploy

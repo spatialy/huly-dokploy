@@ -27,12 +27,6 @@ env = [
   "# LiveKit Configuration (built-in - auto-generated keys)",
   "LIVEKIT_API_KEY=${livekit_api_key}",
   "LIVEKIT_API_SECRET=${livekit_api_secret}",
-  "# OpenAI Configuration (optional - for AI assistant)",
-  "OPENAI_API_KEY=",
-  "OPENAI_BASE_URL=",
-  "OPENAI_MODEL=",
-  "OPENAI_SUMMARY_MODEL=",
-  "OPENAI_TRANSLATE_MODEL=",
   "# GitHub Integration (optional - requires GitHub App)",
   "GITHUB_APPID=",
   "GITHUB_APPNAME=",
@@ -40,13 +34,6 @@ env = [
   "GITHUB_CLIENT_SECRET=",
   "GITHUB_PRIVATE_KEY=",
   "GITHUB_BOT_NAME=",
-  "# Speech-to-Text Configuration (optional - for AI voice features)",
-  "STT_PROVIDER=",
-  "STT_URL=",
-  "STT_API_KEY=",
-  "STT_MODEL=",
-  "LOVE_AGENT_STT_PROVIDER=stream",
-  "LOVE_AGENT_DEBUG=false",
   "# Email / SMTP Configuration (required for OTP login)",
   "MAIL_FROM=",
   "SMTP_HOST=",
@@ -93,6 +80,7 @@ exec nginx -g 'daemon off;'
 """
 
 # Nginx config with all V7 routes and cookie fixes
+# All upstreams use variables for lazy DNS resolution — nginx starts even if backends aren't ready
 [[config.mounts]]
 filePath = "/volumes/nginx/.huly.nginx"
 content = """
@@ -101,20 +89,22 @@ server {
     server_name _;
     client_max_body_size 0;
 
-    # Docker embedded DNS - allows nginx to start even if optional services are down
+    # Docker embedded DNS - required for variable-based upstream resolution
     resolver 127.0.0.11 valid=10s;
 
     # Frontend
     location / {
+        set $upstream_front http://front:8080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
-        proxy_pass http://front:8080;
+        proxy_pass $upstream_front;
     }
 
     # Accounts - WITH COOKIE FIXES FOR V7 SESSION PERSISTENCE
     location /_accounts {
+        set $upstream_account http://account:3000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -122,33 +112,19 @@ server {
         proxy_set_header X-Forwarded-Proto https;
 
         rewrite ^/_accounts(/.*)$ $1 break;
-        
+
         # Cookie handling fixes for V7 session persistence
         proxy_cookie_path / /;
         proxy_cookie_flags ~ secure samesite=lax;
         # Dynamic cookie domain - replaced by entrypoint.sh
         proxy_cookie_domain PARENT_DOMAIN_PLACEHOLDER HOST_ADDRESS_PLACEHOLDER;
-        
-        proxy_pass http://account:3000/;
-    }
 
-    # AI Bot (optional - uses variable so nginx starts even if aibot is down)
-    location /_ai {
-        set $upstream_ai http://aibot:4011;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        rewrite ^/_ai(/.*)$ $1 break;
-        proxy_pass $upstream_ai;
+        proxy_pass $upstream_account;
     }
 
     # Love (Video calls service)
     location /_love {
+        set $upstream_love http://love:8097;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -158,11 +134,12 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         rewrite ^/_love(/.*)$ $1 break;
-        proxy_pass http://love:8097/;
+        proxy_pass $upstream_love;
     }
 
     # Collaborator (WebSocket)
     location /_collaborator {
+        set $upstream_collaborator http://collaborator:3078;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -172,11 +149,12 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         rewrite ^/_collaborator(/.*)$ $1 break;
-        proxy_pass http://collaborator:3078/;
+        proxy_pass $upstream_collaborator;
     }
 
     # Transactor (WebSocket)
     location /_transactor {
+        set $upstream_transactor http://transactor:3333;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -186,11 +164,12 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         rewrite ^/_transactor(/.*)$ $1 break;
-        proxy_pass http://transactor:3333/;
+        proxy_pass $upstream_transactor;
     }
 
     # Transactor token shortcuts (JWT paths)
     location ~ ^/eyJ {
+        set $upstream_transactor_jwt http://transactor:3333;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -199,33 +178,36 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
-        proxy_pass http://transactor:3333;
+        proxy_pass $upstream_transactor_jwt;
     }
 
     # Rekoni
     location /_rekoni {
+        set $upstream_rekoni http://rekoni:4004;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
 
         rewrite ^/_rekoni(/.*)$ $1 break;
-        proxy_pass http://rekoni:4004/;
+        proxy_pass $upstream_rekoni;
     }
 
     # Stats
     location /_stats {
+        set $upstream_stats http://stats:4900;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
 
         rewrite ^/_stats(/.*)$ $1 break;
-        proxy_pass http://stats:4900/;
+        proxy_pass $upstream_stats;
     }
 
     # Pulse (WebSocket)
     location /_pulse {
+        set $upstream_pulse http://hulypulse:8098;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -236,43 +218,46 @@ server {
         proxy_set_header Connection "upgrade";
 
         rewrite ^/_pulse(.*)$ /ws$1 break;
-        proxy_pass http://hulypulse:8098;
+        proxy_pass $upstream_pulse;
     }
 
     # Stream
     location /_stream {
+        set $upstream_stream http://stream:1081;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
 
         rewrite ^/_stream(.*)$ $1 break;
-        proxy_pass http://stream:1081;
+        proxy_pass $upstream_stream;
     }
 
     # Preview
     location /_preview {
+        set $upstream_preview http://preview:4043;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
 
         rewrite ^/_preview(.*)$ $1 break;
-        proxy_pass http://preview:4043;
+        proxy_pass $upstream_preview;
     }
 
     # Datalake
     location /_datalake {
+        set $upstream_datalake http://datalake:4031;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
 
         rewrite ^/_datalake(/.*)$ $1 break;
-        proxy_pass http://datalake:4031/;
+        proxy_pass $upstream_datalake;
     }
 
-    # GitHub Integration (optional - uses variable so nginx starts even if github is down)
+    # GitHub Integration
     location /_github {
         set $upstream_github http://github:3500;
         proxy_set_header Host $host;
@@ -283,7 +268,7 @@ server {
         proxy_pass $upstream_github;
     }
 
-    # Print (optional - uses variable so nginx starts even if print is down)
+    # Print
     location /_print {
         set $upstream_print http://print:4005;
         proxy_set_header Host $host;
@@ -294,33 +279,9 @@ server {
         proxy_pass $upstream_print;
     }
 
-    # Billing
-    location /_billing {
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-
-        rewrite ^/_billing(/.*)$ $1 break;
-        proxy_pass http://billing:4042/;
-    }
-
-    # KVS (Key-Value Store)
-    location /_kvs {
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto https;
-
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        rewrite ^/_kvs(/.*)$ $1 break;
-        proxy_pass http://kvs:8094/;
-    }
-
     # LiveKit signaling (WebSocket)
     location /livekit/ {
+        set $upstream_livekit http://livekit:7880;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -332,7 +293,7 @@ server {
         proxy_read_timeout 86400;
         proxy_send_timeout 86400;
         proxy_buffering off;
-        proxy_pass http://livekit:7880/;
+        proxy_pass $upstream_livekit;
     }
 }
 """

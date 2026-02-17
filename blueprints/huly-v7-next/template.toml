@@ -9,7 +9,7 @@ livekit_api_secret = "${base64:32}"
 [config]
 env = [
   "HULY_VERSION=v0.7.353",
-  "TEMPLATE_VERSION=v3.0.1",
+  "TEMPLATE_VERSION=v3.0.2",
   "DOCKER_NAME=huly_v7",
   "HOST_ADDRESS=${main_domain}",
   "SECRET=${huly_secret}",
@@ -130,7 +130,8 @@ server {
         # IMPORTANT: Hardcode https - $scheme returns "http" inside Docker container
         proxy_set_header X-Forwarded-Proto https;
 
-        rewrite ^/_accounts(/.*)?$ $1 break;
+        rewrite ^/_accounts$ / break;
+        rewrite ^/_accounts(/.*)$ $1 break;
 
         # Cookie handling fixes for V7 session persistence
         proxy_cookie_path / /;

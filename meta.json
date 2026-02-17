@@ -2,7 +2,7 @@
     {
         "id": "huly-v7",
         "name": "Huly V7 (by spatialy)",
-        "version": "v1.1.3",
+        "version": "v1.1.4",
         "description": "All-in-one project management (Huly v0.7.315). Session persistence fix, LiveKit video built-in. Task management, real-time editing, team collaboration.",
         "logo": "huly.svg",
         "links": {
@@ -21,7 +21,7 @@
     {
         "id": "huly-v7-next",
         "name": "Huly V7 Next (by spatialy)",
-        "version": "v3.0.1",
+        "version": "v3.0.2",
         "description": "All-in-one project management (Huly v0.7.353, official hardcoreeng images on CockroachDB). Session persistence fix, LiveKit video, AI assistant, Calendar/Gmail/Telegram integrations.",
         "logo": "huly.svg",
         "links": {

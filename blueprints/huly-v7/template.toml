@@ -9,7 +9,7 @@ livekit_api_secret = "${base64:32}"
 [config]
 env = [
   "HULY_VERSION=v0.7.315",
-  "TEMPLATE_VERSION=v1.1.1",
+  "TEMPLATE_VERSION=v1.1.2",
   "DOCKER_NAME=huly_v7",
   "HOST_ADDRESS=${main_domain}",
   "SECRET=${huly_secret}",
@@ -339,7 +339,7 @@ sed -i "s|LIVEKIT_SECRET_PLACEHOLDER|$LIVEKIT_API_SECRET|g" /etc/livekit.yaml
 sed -i "s|LIVEKIT_DOMAIN_PLACEHOLDER|$HOST_ADDRESS|g" /etc/livekit.yaml
 
 echo "LiveKit config ready. Starting server..."
-exec livekit-server --config /etc/livekit.yaml
+exec /livekit-server --config /etc/livekit.yaml
 """
 
 # LiveKit server configuration template (placeholders replaced by entrypoint.sh)

@@ -2,7 +2,7 @@
     {
         "id": "huly-v7",
         "name": "Huly V7 (by spatialy)",
-        "version": "v1.1.1",
+        "version": "v1.1.2",
         "description": "All-in-one project management (Huly v0.7.315). Session persistence fix, LiveKit video built-in. Task management, real-time editing, team collaboration.",
         "logo": "huly.svg",
         "links": {

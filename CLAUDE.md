@@ -111,7 +111,9 @@ Bump the template version: `./scripts/bump-version.sh [major|minor|patch]`
 
 This updates `VERSION`, `meta.json` version badge, and `template.toml` `TEMPLATE_VERSION` env var. The version badge shows in Dokploy's template picker UI.
 
-**Important**: Dokploy bakes templates at deploy time. Pushing changes here does NOT update existing deployments. Users must delete and redeploy to pick up new template versions. The `TEMPLATE_VERSION` env var in their Dokploy env panel tells them which version they deployed.
+**Important**: Dokploy bakes templates at deploy time. Pushing changes here does NOT update existing deployments. Users should manually edit the compose file and mounts in Dokploy's editor, then click **Redeploy** to preserve data. **Do NOT delete + redeploy** — Dokploy generates a new project name (`-p` flag), which creates new empty volumes and orphans the old data. The `TEMPLATE_VERSION` env var in their Dokploy env panel tells them which version they deployed.
+
+**Dokploy mount behavior**: `[[config.mounts]]` content is written verbatim — `[variables]` are NOT interpolated. Use runtime entrypoint scripts with `sed` replacement (same pattern as nginx and livekit) to inject env var values into config files.
 
 ### Update Huly upstream version
 Change `HULY_VERSION=v0.7.315` in `template.toml` and update the Huly version reference in `meta.json` description. All 21 `haiodo/*` services use this single variable. Then bump the template version too.

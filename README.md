@@ -154,7 +154,11 @@ This template tracks **two independent versions**:
 | **Template version** | Our blueprint changes (fixes, config improvements) | `v1.1.0` (shown as badge in Dokploy template picker) |
 | **Huly version** | Upstream `haiodo/*` Docker image tags | `v0.7.315` (shown in description) |
 
-**Dokploy bakes templates at deploy time.** Pushing updates to this repo does NOT update existing deployments. To check which version you deployed, look for `TEMPLATE_VERSION` in your Dokploy **Environment** tab. To upgrade, delete the compose service and redeploy from the template (Docker volumes are preserved, so your data stays).
+**Dokploy bakes templates at deploy time.** Pushing updates to this repo does NOT update existing deployments. To check which version you deployed, look for `TEMPLATE_VERSION` in your Dokploy **Environment** tab.
+
+**To upgrade without losing data:** Edit the docker-compose.yml and mounted files directly in Dokploy's compose editor, then click **Redeploy**. This preserves all Docker volumes (database, files, etc.).
+
+> **Warning:** Do NOT delete and redeploy from the template to upgrade. Dokploy generates a new project name on each deploy, which creates new empty volumes. Your old data becomes orphaned (still on disk, but not attached to the new deployment).
 
 ---
 

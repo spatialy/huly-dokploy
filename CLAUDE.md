@@ -4,18 +4,25 @@
 
 Dokploy blueprint template for self-hosting [Huly V7](https://huly.io/) — an all-in-one project management platform. The template's core value is a **session persistence fix** that prevents the logout-on-refresh bug in Huly V7 behind reverse proxies.
 
-Forked from `shali1995/huly-dokploy-fucking-working`. Huly Docker images use `haiodo/*` from the [intabia-fusion/foundation-selfhost](https://github.com/intabia-fusion/foundation-selfhost) PostgreSQL fork (replaces CockroachDB). The `intabiafusion/*` images exist but aren't production-ready yet — we track `haiodo/*` to match their actual upstream compose.
+Forked from `shali1995/huly-dokploy-fucking-working`. Two blueprints are available:
+
+- **`huly-v7`** (v1.1.2) — Legacy blueprint using `haiodo/*` images at v0.7.315 (from the intabia-fusion PostgreSQL fork). Stable fallback.
+- **`huly-v7-next`** (v2.0.0) — Uses official `hardcoreeng/*` upstream images at v0.7.353. PostgreSQL support was merged upstream (PR #10331, Dec 2025), so the fork is no longer needed. Adds `kvs` and `link-preview` services.
 
 ## Repository Structure
 
 ```
 VERSION                                # Template semver (single source of truth)
-meta.json                              # Blueprint registry: single entry (huly-v7)
+meta.json                              # Blueprint registry: huly-v7 + huly-v7-next
 README.md                              # User-facing deployment guide
 scripts/bump-version.sh                # Bump template version across all files
-blueprints/huly-v7/
+blueprints/huly-v7/                    # Legacy: haiodo/* v0.7.315
   template.toml                        # Dokploy template: variables, env, domains, mounted files
   docker-compose.yml                   # 29 services orchestration (including LiveKit)
+  huly.svg                             # Logo for Dokploy UI
+blueprints/huly-v7-next/               # New: hardcoreeng/* v0.7.353
+  template.toml                        # Same structure, official upstream images
+  docker-compose.yml                   # 31 services (adds kvs, link-preview)
   huly.svg                             # Logo for Dokploy UI
 ```
 
@@ -36,7 +43,7 @@ All traffic enters through **nginx:80**, which routes by URL path prefix:
 | **Proxy** | nginx (routes `/_<name>` and `/livekit/` paths to backends) |
 | **Infrastructure** | postgres:18.1, redis:8.0, redpanda:v25.2.11 (Kafka), minio (S3), elastic:7.14.2, livekit (WebRTC) |
 | **Core** | account:3000, transactor:3333, front:8080, workspace, collaborator:3078, fulltext:4700 |
-| **Feature** | love:8097 (video), love-agent, aibot:4011, billing:4042, stats:4900, hulypulse:8098, stream:1081, media, preview:4043, datalake:4031, rekoni:4004, print:4005, github:3500, mail:8097, rating, process-service |
+| **Feature** | love:8097 (video), love-agent, aibot:4011, billing:4042, stats:4900, hulypulse:8098, stream:1081, media, preview:4043, datalake:4031, rekoni:4004, print:4005, github:3500, mail:8097, rating, process-service, kvs:8094, link-preview:4041 |
 
 ### LiveKit Integration
 
@@ -73,7 +80,7 @@ livekit_api_key   = "${password:16}"   → LIVEKIT_API_KEY
 livekit_api_secret = "${base64:32}"    → LIVEKIT_API_SECRET
 ```
 
-These feed into `[config] env` which becomes the `.env` for docker-compose. The `${HULY_VERSION}` variable (currently `v0.7.315`) pins all `haiodo/*` image tags. The `TEMPLATE_VERSION` env var tracks our template's own semver (separate from upstream Huly).
+These feed into `[config] env` which becomes the `.env` for docker-compose. The `${HULY_VERSION}` variable pins all service image tags (`v0.7.315` for huly-v7, `v0.7.353` for huly-v7-next). The `TEMPLATE_VERSION` env var tracks our template's own semver (separate from upstream Huly).
 
 ## Key Configuration
 
@@ -104,8 +111,8 @@ Two independent versions are tracked:
 
 | Version | What it tracks | Where it lives |
 |---------|---------------|----------------|
-| **Template version** (`v1.1.0`) | Our blueprint/template changes | `VERSION`, `meta.json`, `template.toml` `TEMPLATE_VERSION` |
-| **Huly version** (`v0.7.315`) | Upstream haiodo/* Docker image tags | `template.toml` `HULY_VERSION`, `meta.json` description |
+| **Template version** (`v1.1.x` / `v2.0.x`) | Our blueprint/template changes | `VERSION`, `meta.json`, `template.toml` `TEMPLATE_VERSION` |
+| **Huly version** (`v0.7.315` / `v0.7.353`) | Upstream Docker image tags | `template.toml` `HULY_VERSION`, `meta.json` description |
 
 Bump the template version: `./scripts/bump-version.sh [major|minor|patch]`
 
@@ -116,7 +123,7 @@ This updates `VERSION`, `meta.json` version badge, and `template.toml` `TEMPLATE
 **Dokploy mount behavior**: `[[config.mounts]]` content is written verbatim — `[variables]` are NOT interpolated. Use runtime entrypoint scripts with `sed` replacement (same pattern as nginx and livekit) to inject env var values into config files.
 
 ### Update Huly upstream version
-Change `HULY_VERSION=v0.7.315` in `template.toml` and update the Huly version reference in `meta.json` description. All 21 `haiodo/*` services use this single variable. Then bump the template version too.
+Change `HULY_VERSION` in `template.toml` and update the Huly version reference in `meta.json` description. All `hardcoreeng/*` (or `haiodo/*` for legacy) services use this single variable. Then bump the template version too.
 
 ### Add/modify a service
 1. Add the service in `blueprints/huly-v7/docker-compose.yml`
@@ -138,12 +145,15 @@ Note: The entrypoint.sh, nginx config, and livekit.yaml are embedded in template
 
 | Service | Reason |
 |---------|--------|
-| Calendar | Requires MongoDB + KVS (new infrastructure). Deferred to future. |
+| Calendar | Requires MongoDB. Deferred to future. |
 | Gmail/Telegram | Advanced integrations requiring external credentials. Future phase. |
+| export, notification, worker | Optional upstream services. Evaluate for future inclusion. |
 
 ## Upstream References
 
 - **Huly (original)**: https://github.com/hcengineering/huly
-- **PostgreSQL fork**: https://github.com/intabia-fusion/foundation-selfhost
-- **Docker images** (`haiodo/*`): https://hub.docker.com/u/haiodo
+- **Official self-hosting**: https://github.com/hcengineering/huly-selfhost
+- **Docker images** (`hardcoreeng/*`): https://hub.docker.com/u/hardcoreeng
+- **Legacy images** (`haiodo/*`): https://hub.docker.com/u/haiodo (dead since Dec 2025)
+- **PostgreSQL fork** (legacy): https://github.com/intabia-fusion/foundation-selfhost
 - **Huly docs**: https://huly.io/docs/self-hosting

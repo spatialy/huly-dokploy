@@ -130,7 +130,7 @@ server {
         # IMPORTANT: Hardcode https - $scheme returns "http" inside Docker container
         proxy_set_header X-Forwarded-Proto https;
 
-        rewrite ^/_accounts(/.*)$ $1 break;
+        rewrite ^/_accounts(/.*)?$ $1 break;
 
         # Cookie handling fixes for V7 session persistence
         proxy_cookie_path / /;

@@ -7,7 +7,7 @@ Dokploy blueprint template for self-hosting [Huly V7](https://huly.io/) — an a
 Forked from `shali1995/huly-dokploy-fucking-working`. Two blueprints are available:
 
 - **`huly-v7`** (v1.1.2) — Legacy blueprint using `haiodo/*` images at v0.7.315 (from the intabia-fusion PostgreSQL fork). Stable fallback.
-- **`huly-v7-next`** (v2.0.0) — Uses official `hardcoreeng/*` upstream images at v0.7.353. PostgreSQL support was merged upstream (PR #10331, Dec 2025), so the fork is no longer needed. Adds `kvs` and `link-preview` services.
+- **`huly-v7-next`** (v2.0.1) — Uses official `hardcoreeng/*` upstream images at v0.7.353. PostgreSQL support was merged upstream (PR #10331, Dec 2025), so the fork is no longer needed. Adds `link-preview`, `aibot` + MongoDB for AI assistant.
 
 ## Repository Structure
 
@@ -22,7 +22,7 @@ blueprints/huly-v7/                    # Legacy: haiodo/* v0.7.315
   huly.svg                             # Logo for Dokploy UI
 blueprints/huly-v7-next/               # New: hardcoreeng/* v0.7.353
   template.toml                        # Same structure, official upstream images
-  docker-compose.yml                   # 31 services (adds kvs, link-preview)
+  docker-compose.yml                   # 30 services (adds link-preview, aibot + mongo)
   huly.svg                             # Logo for Dokploy UI
 ```
 
@@ -43,7 +43,7 @@ All traffic enters through **nginx:80**, which routes by URL path prefix:
 | **Proxy** | nginx (routes `/_<name>` and `/livekit/` paths to backends) |
 | **Infrastructure** | postgres:18.1, redis:8.0, redpanda:v25.2.11 (Kafka), minio (S3), elastic:7.14.2, livekit (WebRTC) |
 | **Core** | account:3000, transactor:3333, front:8080, workspace, collaborator:3078, fulltext:4700 |
-| **Feature** | love:8097 (video), love-agent, aibot:4011, billing:4042, stats:4900, hulypulse:8098, stream:1081, media, preview:4043, datalake:4031, rekoni:4004, print:4005, github:3500, mail:8097, rating, process-service, kvs:8094, link-preview:4041 |
+| **Feature** | love:8097 (video), aibot:4010 (AI), stats:4900, hulypulse:8098, stream:1081, media, preview:4043, datalake:4031, rekoni:4004, print:4005, github:3500, mail:8097, rating, process-service, link-preview:4041 |
 
 ### LiveKit Integration
 
@@ -143,11 +143,15 @@ Note: The entrypoint.sh, nginx config, and livekit.yaml are embedded in template
 
 ## Excluded Services (and why)
 
-| Service | Reason |
-|---------|--------|
-| Calendar | Requires MongoDB. Deferred to future. |
-| Gmail/Telegram | Advanced integrations requiring external credentials. Future phase. |
-| export, notification, worker | Optional upstream services. Evaluate for future inclusion. |
+| Service | Reason | Impact |
+|---------|--------|--------|
+| **kvs** | CockroachDB-specific DDL (`$1` parameterized syntax fails on PostgreSQL) | Calendar, Gmail, Telegram integrations broken (no sync state). Core Huly unaffected. |
+| **billing** | CockroachDB `STRING` type in migrations (PostgreSQL uses `TEXT`) | No usage tracking UI. All features still work — services check `if BillingUrl !== ''`. |
+| **love-agent** | Requires `PlatformToken` — a JWT with aibot's runtime-assigned PersonUuid. Cloud-only auth pattern. | No real-time meeting transcription. Video calls (love + LiveKit) still work fine. |
+| **Calendar/Gmail/Telegram** | Blocked by kvs (CockroachDB-only). Cannot function without sync state. | Future phase — waiting for upstream PostgreSQL-compatible kvs. |
+| **backup, export** | Straightforward to add (PostgreSQL-compatible). Planned for next phase. | No backup/export functionality yet. |
+| **notification** | Requires push notification keys. | No push notifications. |
+| **worker** | Requires Temporal.io infrastructure. Too heavy for self-hosting. | Deferred indefinitely. |
 
 ## Upstream References
 

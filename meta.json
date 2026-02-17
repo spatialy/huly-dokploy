@@ -21,8 +21,8 @@
     {
         "id": "huly-v7-next",
         "name": "Huly V7 Next (by spatialy)",
-        "version": "v2.0.0",
-        "description": "All-in-one project management (Huly v0.7.353, official hardcoreeng images). Session persistence fix, LiveKit video built-in, link previews.",
+        "version": "v2.0.1",
+        "description": "All-in-one project management (Huly v0.7.353, official hardcoreeng images). Session persistence fix, LiveKit video built-in, link previews, AI assistant.",
         "logo": "huly.svg",
         "links": {
             "github": "https://github.com/hcengineering/huly",

@@ -1,7 +1,7 @@
 [variables]
 main_domain = "${domain}"
 huly_secret = "${base64:64}"
-postgres_password = "${password:32}"
+cockroach_password = "${password:32}"
 redpanda_password = "${password:16}"
 livekit_api_key = "${password:16}"
 livekit_api_secret = "${base64:32}"
@@ -9,17 +9,17 @@ livekit_api_secret = "${base64:32}"
 [config]
 env = [
   "HULY_VERSION=v0.7.353",
-  "TEMPLATE_VERSION=v2.0.1",
+  "TEMPLATE_VERSION=v3.0.0",
   "DOCKER_NAME=huly_v7",
   "HOST_ADDRESS=${main_domain}",
   "SECRET=${huly_secret}",
   "TITLE=Huly",
   "DEFAULT_LANGUAGE=en",
   "LAST_NAME_FIRST=true",
-  "POSTGRES_DB=huly",
-  "POSTGRES_USER=huly",
-  "POSTGRES_PASSWORD=${postgres_password}",
-  "CR_DB_URL=postgres://huly:${postgres_password}@postgres:5432/huly",
+  "CR_DATABASE=huly",
+  "CR_USERNAME=huly",
+  "CR_PASSWORD=${cockroach_password}",
+  "CR_DB_URL=postgres://huly:${cockroach_password}@cockroach:26257/huly",
   "STORAGE_CONFIG=datalake|http://datalake:4031",
   "REDPANDA_ADMIN_USER=admin",
   "REDPANDA_ADMIN_PWD=${redpanda_password}",
@@ -52,6 +52,17 @@ env = [
   "OPENAI_TRANSLATE_MODEL=",
   "AI_BOT_FIRST_NAME=Huly",
   "AI_BOT_LAST_NAME=AI",
+  "# Google Calendar & Gmail Integration (optional - requires Google OAuth credentials)",
+  "GOOGLE_CREDENTIALS=",
+  "# Telegram Bot Integration (optional - requires bot token from @BotFather)",
+  "TELEGRAM_BOT_TOKEN=",
+  "TELEGRAM_CHAT_ID=",
+  "# Speech-to-Text for Meeting Transcription (optional - used by love-agent)",
+  "STT_PROVIDER=stream",
+  "STT_URL=",
+  "STT_API_KEY=",
+  "STT_MODEL=",
+  "LOVE_AGENT_DEBUG=false",
 ]
 
 [[config.domains]]
@@ -300,6 +311,39 @@ server {
         proxy_set_header Connection "upgrade";
         rewrite ^/_ai(/.*)$ $1 break;
         proxy_pass $upstream_ai;
+    }
+
+    # Calendar Integration
+    location /_calendar {
+        set $upstream_calendar http://calendar:8095;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        rewrite ^/_calendar(/.*)$ $1 break;
+        proxy_pass $upstream_calendar;
+    }
+
+    # Gmail Integration
+    location /_gmail {
+        set $upstream_gmail http://gmail:8087;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        rewrite ^/_gmail(/.*)$ $1 break;
+        proxy_pass $upstream_gmail;
+    }
+
+    # Telegram Bot Integration
+    location /_telegram {
+        set $upstream_telegram http://telegram-bot:8086;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        rewrite ^/_telegram(/.*)$ $1 break;
+        proxy_pass $upstream_telegram;
     }
 
     # LiveKit signaling (WebSocket)

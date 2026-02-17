@@ -12,19 +12,16 @@ services:
       - HOST_ADDRESS=${HOST_ADDRESS}
     restart: unless-stopped
 
-  postgres:
-    image: postgres:18.1
+  cockroach:
+    image: cockroachdb/cockroach:latest-v24.2
+    command: start-single-node --accept-sql-without-tls
     environment:
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - COCKROACH_DATABASE=${CR_DATABASE}
+      - COCKROACH_USER=${CR_USERNAME}
+      - COCKROACH_PASSWORD=${CR_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - cr_data:/cockroach/cockroach-data
+      - cr_certs:/cockroach/certs
     restart: unless-stopped
 
   redpanda:
@@ -189,8 +186,8 @@ services:
   account:
     image: hardcoreeng/account:${HULY_VERSION}
     depends_on:
-      postgres:
-        condition: service_healthy
+      cockroach:
+        condition: service_started
     environment:
       - SERVER_PORT=3000
       - SERVER_SECRET=${SECRET}
@@ -268,8 +265,8 @@ services:
     depends_on:
       minio:
         condition: service_healthy
-      postgres:
-        condition: service_healthy
+      cockroach:
+        condition: service_started
       stats:
         condition: service_started
       account:
@@ -439,9 +436,81 @@ services:
       - OPENAI_TRANSLATE_MODEL=${OPENAI_TRANSLATE_MODEL:-}
     restart: unless-stopped
 
+  kvs:
+    image: hardcoreeng/hulykvs:${HULY_VERSION}
+    depends_on:
+      cockroach:
+        condition: service_started
+    environment:
+      - HULY_DB_CONNECTION=${CR_DB_URL}
+      - HULY_TOKEN_SECRET=${SECRET}
+    restart: unless-stopped
+
+  calendar:
+    image: hardcoreeng/calendar:${HULY_VERSION}
+    depends_on:
+      - kvs
+      - mongo
+    environment:
+      - PORT=8095
+      - SECRET=${SECRET}
+      - ACCOUNTS_URL=http://account:3000
+      - KVS_URL=http://kvs:8094
+      - MONGO_URL=mongodb://mongo:27017
+      - QUEUE_CONFIG=redpanda:9092
+      - CREDENTIALS=${GOOGLE_CREDENTIALS:-}
+      - WATCH_URL=https://${HOST_ADDRESS}/_calendar
+    restart: unless-stopped
+
+  gmail:
+    image: hardcoreeng/gmail:${HULY_VERSION}
+    depends_on:
+      - kvs
+    environment:
+      - PORT=8087
+      - SECRET=${SECRET}
+      - ACCOUNTS_URL=http://account:3000
+      - KVS_URL=http://kvs:8094
+      - QUEUE_CONFIG=redpanda:9092
+      - CREDENTIALS=${GOOGLE_CREDENTIALS:-}
+    restart: unless-stopped
+
+  telegram-bot:
+    image: hardcoreeng/telegram:${HULY_VERSION}
+    depends_on:
+      - mongo
+    environment:
+      - PORT=8086
+      - SECRET=${SECRET}
+      - ACCOUNTS_URL=http://account:3000
+      - MONGO_URL=mongodb://mongo:27017
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+    restart: unless-stopped
+
+  love-agent:
+    image: haiodo/love-agent:v0.7.315
+    extra_hosts: ['host.docker.internal:host-gateway']
+    depends_on:
+      - love
+      - aibot
+    environment:
+      - SERVER_SECRET=${SECRET}
+      - PLATFORM_URL=http://aibot:4010
+      - LIVEKIT_URL=ws://livekit:7880
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - STT_PROVIDER=${STT_PROVIDER:-stream}
+      - STT_URL=${STT_URL:-}
+      - STT_API_KEY=${STT_API_KEY:-}
+      - STT_MODEL=${STT_MODEL:-}
+      - DEBUG=${LOVE_AGENT_DEBUG:-false}
+    restart: unless-stopped
+
 volumes:
+  cr_data:
+  cr_certs:
   elastic:
   files:
   mongo_data:
-  postgres_data:
   redpanda:

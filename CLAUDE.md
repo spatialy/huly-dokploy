@@ -7,7 +7,7 @@ Dokploy blueprint template for self-hosting [Huly V7](https://huly.io/) — an a
 Forked from `shali1995/huly-dokploy-fucking-working`. Two blueprints are available:
 
 - **`huly-v7`** (v1.1.2) — Legacy blueprint using `haiodo/*` images at v0.7.315 (from the intabia-fusion PostgreSQL fork). Stable fallback.
-- **`huly-v7-next`** (v2.0.1) — Uses official `hardcoreeng/*` upstream images at v0.7.353. PostgreSQL support was merged upstream (PR #10331, Dec 2025), so the fork is no longer needed. Adds `link-preview`, `aibot` + MongoDB for AI assistant.
+- **`huly-v7-next`** (v3.0.0) — Uses official `hardcoreeng/*` upstream images at v0.7.353 on CockroachDB (matching the official upstream). Full service stack including `kvs`, `calendar`, `gmail`, `telegram-bot`, `link-preview`, `aibot` + MongoDB, and experimental `love-agent` (haiodo v0.7.315). **Breaking change from v2.x** — migrated from PostgreSQL to CockroachDB.
 
 ## Repository Structure
 
@@ -22,7 +22,7 @@ blueprints/huly-v7/                    # Legacy: haiodo/* v0.7.315
   huly.svg                             # Logo for Dokploy UI
 blueprints/huly-v7-next/               # New: hardcoreeng/* v0.7.353
   template.toml                        # Same structure, official upstream images
-  docker-compose.yml                   # 30 services (adds link-preview, aibot + mongo)
+  docker-compose.yml                   # 34 services (CockroachDB, kvs, calendar, gmail, telegram, love-agent)
   huly.svg                             # Logo for Dokploy UI
 ```
 
@@ -41,9 +41,18 @@ All traffic enters through **nginx:80**, which routes by URL path prefix:
 | Layer | Services |
 |-------|----------|
 | **Proxy** | nginx (routes `/_<name>` and `/livekit/` paths to backends) |
-| **Infrastructure** | postgres:18.1, redis:8.0, redpanda:v25.2.11 (Kafka), minio (S3), elastic:7.14.2, livekit (WebRTC) |
-| **Core** | account:3000, transactor:3333, front:8080, workspace, collaborator:3078, fulltext:4700 |
-| **Feature** | love:8097 (video), aibot:4010 (AI), stats:4900, hulypulse:8098, stream:1081, media, preview:4043, datalake:4031, rekoni:4004, print:4005, github:3500, mail:8097, rating, process-service, link-preview:4041 |
+| **Infrastructure** | cockroachdb:26257 (huly-v7-next) / postgres:5432 (huly-v7), redis:8.0, redpanda:v25.2.11 (Kafka), minio (S3), elastic:7.14.2, mongo:27017, livekit (WebRTC) |
+| **Core** | account:3000, transactor:3333, front:8080, workspace, collaborator:3078, fulltext:4700, kvs:8094 |
+| **Feature** | love:8097 (video), love-agent (transcription), aibot:4010 (AI), stats:4900, hulypulse:8098, stream:1081, media, preview:4043, datalake:4031, rekoni:4004, print:4005, github:3500, mail:8097, rating, process-service, link-preview:4041 |
+| **Integrations** | calendar:8095 (Google Calendar), gmail:8087 (Gmail), telegram-bot:8086 (Telegram) |
+
+### Database Architecture
+
+**huly-v7-next (v3.0.0)** uses **CockroachDB** (`cockroachdb/cockroach:latest-v24.2`), matching the official upstream. CockroachDB speaks the `postgres://` wire protocol — `CR_DB_URL=postgres://user:pass@cockroach:26257/db`. This means all `hardcoreeng/*` services work natively, including `kvs` (which uses CockroachDB-specific `$1` parameterized DDL). MongoDB is also used by `aibot`, `calendar`, and `telegram-bot`.
+
+**huly-v7 (legacy)** uses **PostgreSQL** via `haiodo/*` images from the intabia-fusion fork, which patched services to remove CockroachDB and MongoDB dependencies.
+
+The official [huly-selfhost](https://github.com/hcengineering/huly-selfhost) runs ~14 services on CockroachDB. Our `huly-v7-next` runs **34 services** — the extra services (datalake, love, livekit, kvs, calendar, gmail, telegram, love-agent, aibot, rating, hulypulse, stream, media, preview, rekoni, print, github, mail, process-service, link-preview, mongo) are cloud/enterprise features not included in the official self-hosting guide.
 
 ### LiveKit Integration
 
@@ -72,12 +81,13 @@ The logout-on-refresh bug happens because Huly V7's account service sets cookies
 Dokploy auto-generates secrets at deploy time via `template.toml` `[variables]`:
 
 ```
-main_domain       = "${domain}"        → HOST_ADDRESS, all public URLs
-huly_secret       = "${base64:64}"     → SECRET (JWT signing, inter-service auth)
-postgres_password = "${password:32}"   → POSTGRES_PASSWORD, CR_DB_URL
-redpanda_password = "${password:16}"   → REDPANDA_ADMIN_PWD
-livekit_api_key   = "${password:16}"   → LIVEKIT_API_KEY
-livekit_api_secret = "${base64:32}"    → LIVEKIT_API_SECRET
+main_domain        = "${domain}"        → HOST_ADDRESS, all public URLs
+huly_secret        = "${base64:64}"     → SECRET (JWT signing, inter-service auth)
+cockroach_password = "${password:32}"   → CR_PASSWORD, CR_DB_URL  (huly-v7-next)
+postgres_password  = "${password:32}"   → POSTGRES_PASSWORD, CR_DB_URL  (huly-v7 legacy)
+redpanda_password  = "${password:16}"   → REDPANDA_ADMIN_PWD
+livekit_api_key    = "${password:16}"   → LIVEKIT_API_KEY
+livekit_api_secret = "${base64:32}"     → LIVEKIT_API_SECRET
 ```
 
 These feed into `[config] env` which becomes the `.env` for docker-compose. The `${HULY_VERSION}` variable pins all service image tags (`v0.7.315` for huly-v7, `v0.7.353` for huly-v7-next). The `TEMPLATE_VERSION` env var tracks our template's own semver (separate from upstream Huly).
@@ -90,7 +100,9 @@ These feed into `[config] env` which becomes the `.env` for docker-compose. The 
 
 ### Optional
 - `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`, `OPENAI_SUMMARY_MODEL`, `OPENAI_TRANSLATE_MODEL` — AI assistant (any OpenAI-compatible provider)
-- `STT_PROVIDER`, `STT_URL`, `STT_API_KEY`, `STT_MODEL` — Speech-to-Text for AI voice features
+- `STT_PROVIDER`, `STT_URL`, `STT_API_KEY`, `STT_MODEL` — Speech-to-Text for meeting transcription (love-agent)
+- `GOOGLE_CREDENTIALS` — Google OAuth credentials JSON for Calendar/Gmail integration
+- `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` — Telegram bot integration (get token from @BotFather)
 - `GITHUB_APPID`, `GITHUB_CLIENTID`, `GITHUB_CLIENT_SECRET`, `GITHUB_PRIVATE_KEY`, `GITHUB_BOT_NAME` — GitHub integration
 - `PLATFORM_ADMIN_EMAILS` — admin user emails
 - `TITLE`, `DEFAULT_LANGUAGE`, `LAST_NAME_FIRST` — UI customization
@@ -100,7 +112,7 @@ These feed into `[config] env` which becomes the `.env` for docker-compose. The 
 
 ### Hardcoded Defaults
 - MinIO credentials: `minioadmin`/`minioadmin` (internal only, not exposed)
-- Postgres DB/user: `huly`/`huly`
+- CockroachDB/Postgres DB/user: `huly`/`huly`
 - Redpanda admin user: `admin`
 
 ## Common Tasks
@@ -111,7 +123,7 @@ Two independent versions are tracked:
 
 | Version | What it tracks | Where it lives |
 |---------|---------------|----------------|
-| **Template version** (`v1.1.x` / `v2.0.x`) | Our blueprint/template changes | `VERSION`, `meta.json`, `template.toml` `TEMPLATE_VERSION` |
+| **Template version** (`v1.1.x` / `v3.0.x`) | Our blueprint/template changes | `VERSION`, `meta.json`, `template.toml` `TEMPLATE_VERSION` |
 | **Huly version** (`v0.7.315` / `v0.7.353`) | Upstream Docker image tags | `template.toml` `HULY_VERSION`, `meta.json` description |
 
 Bump the template version: `./scripts/bump-version.sh [major|minor|patch]`
@@ -143,15 +155,18 @@ Note: The entrypoint.sh, nginx config, and livekit.yaml are embedded in template
 
 ## Excluded Services (and why)
 
+These services are excluded from the huly-v7-next blueprint:
+
 | Service | Reason | Impact |
 |---------|--------|--------|
-| **kvs** | CockroachDB-specific DDL (`$1` parameterized syntax fails on PostgreSQL) | Calendar, Gmail, Telegram integrations broken (no sync state). Core Huly unaffected. |
-| **billing** | CockroachDB `STRING` type in migrations (PostgreSQL uses `TEXT`) | No usage tracking UI. All features still work — services check `if BillingUrl !== ''`. |
-| **love-agent** | Requires `PlatformToken` — a JWT with aibot's runtime-assigned PersonUuid. Cloud-only auth pattern. | No real-time meeting transcription. Video calls (love + LiveKit) still work fine. |
-| **Calendar/Gmail/Telegram** | Blocked by kvs (CockroachDB-only). Cannot function without sync state. | Future phase — waiting for upstream PostgreSQL-compatible kvs. |
-| **backup, export** | Straightforward to add (PostgreSQL-compatible). Planned for next phase. | No backup/export functionality yet. |
+| **billing** | Cloud-only feature. Not in official self-hosting. Services gracefully skip when `BillingUrl` is empty. | No usage tracking UI. All features still work. |
+| **backup, export** | Straightforward to add. Planned for next phase. | No backup/export functionality yet. |
 | **notification** | Requires push notification keys. | No push notifications. |
 | **worker** | Requires Temporal.io infrastructure. Too heavy for self-hosting. | Deferred indefinitely. |
+
+### Experimental: love-agent
+
+The `love-agent` service uses `haiodo/love-agent:v0.7.315` (the legacy fork image, NOT `hardcoreeng`). The `hardcoreeng` version requires a `PlatformToken` (cloud-only auth pattern), but the haiodo fork generates tokens internally from `SERVER_SECRET`. This is experimental — cross-version compatibility (haiodo v0.7.315 love-agent talking to hardcoreeng v0.7.353 aibot) is not guaranteed. If it doesn't work, the love-agent can be removed without affecting video calls.
 
 ## Upstream References
 

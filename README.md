@@ -152,7 +152,7 @@ This template tracks **two independent versions**:
 | Version | What | Example |
 |---------|------|---------|
 | **Template version** | Our blueprint changes (fixes, config improvements) | `v1.1.0` (shown as badge in Dokploy template picker) |
-| **Huly version** | Upstream `haiodo/*` Docker image tags | `v0.7.315` (shown in description) |
+| **Huly version** | Upstream Docker image tags | `v0.7.315` (huly-v7) / `v0.7.353` (huly-v7-next) |
 
 **Dokploy bakes templates at deploy time.** Pushing updates to this repo does NOT update existing deployments. To check which version you deployed, look for `TEMPLATE_VERSION` in your Dokploy **Environment** tab.
 
@@ -208,6 +208,10 @@ This makes the template **zero-config** - you just set your domain and it works!
 
 ## Included Services
 
+Two blueprints are available:
+
+### Huly V7 (Legacy) — `haiodo/*` images on PostgreSQL
+
 | Service | Version | Description |
 |---------|---------|-------------|
 | postgres | 18.1 | Database |
@@ -240,7 +244,48 @@ This makes the template **zero-config** - you just set your domain and it works!
 | github | v0.7.315 | GitHub integration |
 | mail | v0.7.315 | Email delivery (OTP codes, notifications) |
 
-All Huly services use `haiodo/*` Docker images from the [intabia-fusion/foundation-selfhost](https://github.com/intabia-fusion/foundation-selfhost) PostgreSQL fork.
+Uses `haiodo/*` Docker images from the [intabia-fusion/foundation-selfhost](https://github.com/intabia-fusion/foundation-selfhost) PostgreSQL fork.
+
+### Huly V7 Next — `hardcoreeng/*` images on CockroachDB
+
+| Service | Version | Description |
+|---------|---------|-------------|
+| cockroachdb | latest-v24.2 | Database (CockroachDB) |
+| redis | 8.0 | Cache for hulypulse and LiveKit |
+| redpanda | v25.2.11 | Message queue (Kafka compatible) |
+| minio | latest | Object storage |
+| elastic | 7.14.2 | Search engine |
+| mongo | 7-jammy | MongoDB (for aibot, calendar, telegram) |
+| nginx | 1.21.3 | Reverse proxy with cookie fixes |
+| livekit | latest | WebRTC server for video calls |
+| account | v0.7.353 | Account management |
+| transactor | v0.7.353 | Data synchronization |
+| collaborator | v0.7.353 | Real-time collaboration |
+| front | v0.7.353 | Frontend |
+| workspace | v0.7.353 | Workspace management |
+| fulltext | v0.7.353 | Full-text search |
+| kvs | v0.7.353 | Key-value store (CockroachDB-backed) |
+| stats | v0.7.353 | Statistics |
+| rekoni | v0.7.353 | Document processing |
+| datalake | v0.7.353 | Data storage API |
+| hulypulse | v0.7.353 | Real-time updates |
+| stream | v0.7.353 | Media streaming |
+| preview | v0.7.353 | File previews |
+| media | v0.7.353 | Media processing |
+| love | v0.7.353 | Video calls service |
+| love-agent | v0.7.315 | Meeting transcription (experimental, haiodo image) |
+| aibot | v0.7.353 | AI assistant |
+| rating | v0.7.353 | Rating service |
+| process-service | v0.7.353 | Background processing |
+| print | v0.7.353 | Print/export service |
+| github | v0.7.353 | GitHub integration |
+| mail | v0.7.353 | Email delivery (OTP codes, notifications) |
+| link-preview | v0.7.353 | Link previews in chat |
+| calendar | v0.7.353 | Google Calendar sync (optional) |
+| gmail | v0.7.353 | Gmail integration (optional) |
+| telegram-bot | v0.7.353 | Telegram bot (optional) |
+
+Uses official `hardcoreeng/*` Docker images on CockroachDB.
 
 ## Usage
 
@@ -266,7 +311,8 @@ The template auto-generates these values:
 |----------|------|-------------|
 | `main_domain` | domain | Your Huly domain (e.g., huly.example.com) |
 | `huly_secret` | base64:64 | Secret for JWT tokens |
-| `postgres_password` | password:32 | PostgreSQL password |
+| `cockroach_password` | password:32 | CockroachDB password (V7 Next) |
+| `postgres_password` | password:32 | PostgreSQL password (V7 Legacy) |
 | `redpanda_password` | password:16 | Redpanda admin password |
 | `livekit_api_key` | password:16 | LiveKit API key (for video calls) |
 | `livekit_api_secret` | base64:32 | LiveKit API secret (for video calls) |
@@ -342,6 +388,31 @@ OPENAI_SUMMARY_MODEL=llama3.1
 
 The bot provides: chat, text translation, message/meeting summarization, and PDF import.
 
+## Optional: Google Calendar & Gmail Integration (V7 Next only)
+
+The Calendar and Gmail services require Google OAuth credentials. To enable:
+
+1. Create a Google Cloud project and enable the Calendar API and Gmail API
+2. Create OAuth 2.0 credentials (type: Web application)
+3. Set the credentials JSON in your Huly app's **Environment** tab:
+
+```
+GOOGLE_CREDENTIALS={"web":{"client_id":"...","client_secret":"...","redirect_uris":["https://your-domain/_calendar"]}}
+```
+
+The Calendar service watches for changes and syncs bidirectionally. The watch webhook URL is automatically set to `https://<HOST_ADDRESS>/_calendar`.
+
+## Optional: Telegram Bot Integration (V7 Next only)
+
+To enable the Telegram bot:
+
+1. Create a bot via [@BotFather](https://t.me/BotFather) on Telegram
+2. Set the environment variables:
+
+```
+TELEGRAM_BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+```
+
 ### Speech-to-Text (STT) for Video Calls
 
 Huly can transcribe meeting audio in real-time. The **love-agent** captures audio from LiveKit and sends chunks to the **aibot** for transcription.
@@ -392,7 +463,7 @@ If you're still being logged out on refresh:
 
 ### Database connection errors
 
-Postgres needs time to initialize. The template includes health checks, but if you see connection errors, wait 30 seconds and redeploy.
+CockroachDB (V7 Next) or PostgreSQL (V7 Legacy) needs time to initialize. If you see connection errors, wait 30 seconds and redeploy.
 
 ### Services not starting
 

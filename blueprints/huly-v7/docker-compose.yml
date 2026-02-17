@@ -90,16 +90,21 @@ services:
 
   livekit:
     image: livekit/livekit-server:latest
-    command: --config /etc/livekit.yaml
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
     depends_on:
       redis:
         condition: service_started
+    environment:
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - HOST_ADDRESS=${HOST_ADDRESS}
     ports:
       - "7881:7881"
       - "3478:3478/udp"
       - "50000-50100:50000-50100/udp"
     volumes:
-      - ../files/volumes/livekit/livekit.yaml:/etc/livekit.yaml:ro
+      - ../files/volumes/livekit/livekit.yaml:/etc/livekit.template:ro
+      - ../files/volumes/livekit/entrypoint.sh:/entrypoint.sh
     restart: unless-stopped
 
   rekoni:

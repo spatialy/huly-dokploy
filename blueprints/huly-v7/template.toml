@@ -9,7 +9,7 @@ livekit_api_secret = "${base64:32}"
 [config]
 env = [
   "HULY_VERSION=v0.7.315",
-  "TEMPLATE_VERSION=v1.1.0",
+  "TEMPLATE_VERSION=v1.1.1",
   "DOCKER_NAME=huly_v7",
   "HOST_ADDRESS=${main_domain}",
   "SECRET=${huly_secret}",
@@ -323,7 +323,26 @@ server {
 }
 """
 
-# LiveKit server configuration
+# LiveKit entrypoint script (replaces placeholders with env vars at runtime)
+[[config.mounts]]
+filePath = "/volumes/livekit/entrypoint.sh"
+content = """
+#!/bin/sh
+set -e
+
+echo "=== LiveKit Entrypoint ==="
+echo "Injecting API keys and domain into config..."
+
+cp /etc/livekit.template /etc/livekit.yaml
+sed -i "s|LIVEKIT_KEY_PLACEHOLDER|$LIVEKIT_API_KEY|g" /etc/livekit.yaml
+sed -i "s|LIVEKIT_SECRET_PLACEHOLDER|$LIVEKIT_API_SECRET|g" /etc/livekit.yaml
+sed -i "s|LIVEKIT_DOMAIN_PLACEHOLDER|$HOST_ADDRESS|g" /etc/livekit.yaml
+
+echo "LiveKit config ready. Starting server..."
+exec livekit-server --config /etc/livekit.yaml
+"""
+
+# LiveKit server configuration template (placeholders replaced by entrypoint.sh)
 [[config.mounts]]
 filePath = "/volumes/livekit/livekit.yaml"
 content = """
@@ -340,11 +359,11 @@ redis:
   address: redis:6379
 turn:
   enabled: true
-  domain: ${main_domain}
+  domain: LIVEKIT_DOMAIN_PLACEHOLDER
   udp_port: 3478
   external_tls: true
 keys:
-  ${livekit_api_key}: ${livekit_api_secret}
+  LIVEKIT_KEY_PLACEHOLDER: LIVEKIT_SECRET_PLACEHOLDER
 logging:
   json: false
   level: info

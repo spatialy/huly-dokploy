@@ -6,6 +6,7 @@ All notable changes to this project are documented here. This project maintains 
 
 ### v3.0.7 (2026-02-18)
 - **fix**: Love-agent crash loop — wrong entry point. Was running `node agent.js` which just exports the module and exits silently. Correct command is `node index.js start` (LiveKit Agent SDK CLI requires the `start` argument to enter worker mode).
+- **docs**: Consolidate README — merge duplicate sections, rewrite STT docs for hardcoreeng love-agent (Deepgram/OpenAI Realtime API), fix love-agent version in service table, add huly-v7-next to file structure, wrap service tables in collapsible `<details>`.
 
 ### v3.0.6 (2026-02-18)
 - **fix**: Love-agent entrypoint token generation failing. Two bugs: (1) `login` RPC was sending params as array `['email', 'password']` but v0.7.353 accounts service expects object `{ email, password }` — caused `BadRequest`. (2) `loginOrSignUp` method doesn't exist in v0.7.353 — caused `UnknownMethod`. Added robust fallback: if `login` fails, generates a system JWT (HS256, signed with `SERVER_SECRET`) using the hardcoded `systemAccountUuid`, queries the accounts service for the ai-bot's `PersonUUID` via `findPersonBySocialKey`, then mints `PLATFORM_TOKEN` directly.

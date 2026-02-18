@@ -231,6 +231,7 @@ services:
       - CALENDAR_URL=https://${HOST_ADDRESS}/_calendar
       - GMAIL_URL=https://${HOST_ADDRESS}/_gmail
       - TELEGRAM_URL=https://${HOST_ADDRESS}/_telegram
+      - TELEGRAM_BOT_URL=https://${HOST_ADDRESS}/_telegram
       - STATS_URL=http://stats:4900
       - STATS_API=https://${HOST_ADDRESS}/_stats
       - UPLOAD_URL=/files
@@ -472,16 +473,19 @@ services:
     restart: unless-stopped
 
   telegram-bot:
-    image: hardcoreeng/telegram:${HULY_VERSION}
+    image: hardcoreeng/telegram-bot:${HULY_VERSION}
     depends_on:
-      - mongo
+      - cockroach
     environment:
-      - PORT=8086
-      - SECRET=${SECRET}
+      - PORT=4020
+      - DB_URL=${CR_DB_URL}
+      - BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
       - ACCOUNTS_URL=http://account:3000
-      - MONGO_URL=mongodb://mongo:27017
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
-      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+      - SECRET=${SECRET}
+      - SERVICE_ID=telegram-bot-service
+      - STORAGE_CONFIG=minio|minio?accessKey=minioadmin&secretKey=minioadmin
+      - QUEUE_CONFIG=redpanda:9092
+      - QUEUE_REGION=
     restart: unless-stopped
 
   cockroach-jobs:

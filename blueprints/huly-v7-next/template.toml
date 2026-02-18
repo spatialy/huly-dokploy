@@ -9,7 +9,7 @@ livekit_api_secret = "${base64:32}"
 [config]
 env = [
   "HULY_VERSION=v0.7.353",
-  "TEMPLATE_VERSION=v3.0.8",
+  "TEMPLATE_VERSION=v3.0.9",
   "DOCKER_NAME=huly_v7",
   "HOST_ADDRESS=${main_domain}",
   "SECRET=${huly_secret}",
@@ -56,7 +56,6 @@ env = [
   "GOOGLE_CREDENTIALS=",
   "# Telegram Bot Integration (optional - requires bot token from @BotFather)",
   "TELEGRAM_BOT_TOKEN=",
-  "TELEGRAM_CHAT_ID=",
   "# Speech-to-Text for Meeting Transcription (optional - used by love-agent)",
   "# STT_PROVIDER: 'deepgram' (default) or 'openai' (uses Realtime API, not Whisper)",
   "STT_PROVIDER=deepgram",
@@ -341,7 +340,7 @@ server {
 
     # Telegram Bot Integration
     location /_telegram {
-        set $upstream_telegram http://telegram-bot:8086;
+        set $upstream_telegram http://telegram-bot:4020;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

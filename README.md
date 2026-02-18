@@ -151,7 +151,7 @@ This template tracks **two independent versions**:
 
 | Version | What | Example |
 |---------|------|---------|
-| **Template version** | Our blueprint changes (fixes, config improvements) | `v1.1.0` (shown as badge in Dokploy template picker) |
+| **Template version** | Our blueprint changes (fixes, config improvements) | `v1.1.4` / `v3.0.7` (shown as badge in Dokploy template picker) |
 | **Huly version** | Upstream Docker image tags | `v0.7.315` (huly-v7) / `v0.7.353` (huly-v7-next) |
 
 **Dokploy bakes templates at deploy time.** Pushing updates to this repo does NOT update existing deployments. To check which version you deployed, look for `TEMPLATE_VERSION` in your Dokploy **Environment** tab.
@@ -162,59 +162,29 @@ This template tracks **two independent versions**:
 
 ---
 
-## Troubleshooting
+## How the Session Fix Works
 
-### Login doesn't persist after refresh
-- Make sure HTTPS is enabled
-- Check that HOST_ADDRESS matches your actual domain
-- Redeploy the app
+The default Huly V7 deployment has a cookie handling issue that causes users to be logged out on page refresh. This template fixes it with four changes that work together:
 
-### Video calls not working
-- Check that ports 7881/tcp, 3478/udp, and 50000-50100/udp are open on your server firewall
-- Verify `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` are set in the environment (auto-generated at deploy time)
-- Try redeploying
+1. **Cookie Domain Rewriting** -- An entrypoint script reads `HOST_ADDRESS` (e.g., `huly.example.com`), calculates the parent domain (`.example.com`), and patches the nginx config with the correct `proxy_cookie_domain` directive
+2. **X-Forwarded-Proto https** -- Hardcoded in nginx to fix protocol detection (Docker internal traffic is HTTP)
+3. **proxy_cookie_flags** -- Sets `Secure` and `SameSite=Lax` on cookies
+4. **TRUST_PROXY=true** -- Tells the account service to trust reverse proxy headers
 
-### Sign Up shows error (V7 Next only)
-- **This is cosmetic.** In v0.7.353, signup creates your account but does not return a login token. The frontend tries to set a session cookie and fails, showing "Unknown error: Unexpected token...".
-- **Your account was created.** Go to the **Sign In** page, enter your email/password, and complete the OTP email verification to log in.
-
-### 502 Bad Gateway
-- Wait a few seconds and refresh
-- If persists, go to Deployments tab and redeploy
+This is **zero-config** -- you just set your domain and it works.
 
 ---
-
-
-
-# Huly V7 Dokploy Template
-
-Complete Dokploy template for Huly V7 with **session persistence fixes** that prevent the logout-on-refresh bug.
-
-## What This Template Fixes
-
-The default Huly V7 deployment has a cookie handling issue that causes users to be logged out when they refresh the page. This template includes all necessary fixes:
-
-1. **Cookie Domain Rewriting** - Automatically configured based on your domain
-2. **X-Forwarded-Proto https** - Hardcoded in nginx to fix protocol detection
-3. **proxy_cookie_flags** - Sets `Secure` and `SameSite=Lax` on cookies
-4. **TRUST_PROXY=true** - Tells the account service to trust reverse proxy headers
-
-## How It Works
-
-The template uses an **entrypoint script** that runs when the nginx container starts:
-
-1. Reads the `HOST_ADDRESS` environment variable (e.g., `huly.example.com`)
-2. Calculates the parent domain (e.g., `example.com`)
-3. Patches the nginx config with the correct `proxy_cookie_domain` directive
-4. Starts nginx with the patched config
-
-This makes the template **zero-config** - you just set your domain and it works!
 
 ## Included Services
 
 Two blueprints are available:
 
-### Huly V7 (Legacy) — `haiodo/*` images on PostgreSQL
+### Huly V7 (Legacy) -- `haiodo/*` images on PostgreSQL
+
+29 services using `haiodo/*` Docker images from the [intabia-fusion/foundation-selfhost](https://github.com/intabia-fusion/foundation-selfhost) PostgreSQL fork at v0.7.315.
+
+<details>
+<summary>Service list</summary>
 
 | Service | Version | Description |
 |---------|---------|-------------|
@@ -239,7 +209,7 @@ Two blueprints are available:
 | preview | v0.7.315 | File previews |
 | media | v0.7.315 | Media processing |
 | love | v0.7.315 | Video calls service |
-| love-agent | v0.7.315 | AI voice agent for video calls |
+| love-agent | v0.7.315 | Meeting transcription |
 | aibot | v0.7.315 | AI assistant |
 | billing | v0.7.315 | Billing service |
 | rating | v0.7.315 | Rating service |
@@ -248,9 +218,14 @@ Two blueprints are available:
 | github | v0.7.315 | GitHub integration |
 | mail | v0.7.315 | Email delivery (OTP codes, notifications) |
 
-Uses `haiodo/*` Docker images from the [intabia-fusion/foundation-selfhost](https://github.com/intabia-fusion/foundation-selfhost) PostgreSQL fork.
+</details>
 
-### Huly V7 Next — `hardcoreeng/*` images on CockroachDB
+### Huly V7 Next -- `hardcoreeng/*` images on CockroachDB
+
+34 services using official `hardcoreeng/*` Docker images on CockroachDB at v0.7.353.
+
+<details>
+<summary>Service list</summary>
 
 | Service | Version | Description |
 |---------|---------|-------------|
@@ -277,7 +252,7 @@ Uses `haiodo/*` Docker images from the [intabia-fusion/foundation-selfhost](http
 | preview | v0.7.353 | File previews |
 | media | v0.7.353 | Media processing |
 | love | v0.7.353 | Video calls service |
-| love-agent | v0.7.315 | Meeting transcription (experimental, haiodo image) |
+| love-agent | v0.7.353 | Meeting transcription (via OpenAI or Deepgram STT) |
 | aibot | v0.7.353 | AI assistant |
 | rating | v0.7.353 | Rating service |
 | process-service | v0.7.353 | Background processing |
@@ -289,27 +264,13 @@ Uses `haiodo/*` Docker images from the [intabia-fusion/foundation-selfhost](http
 | gmail | v0.7.353 | Gmail integration (optional) |
 | telegram-bot | v0.7.353 | Telegram bot (optional) |
 
-Uses official `hardcoreeng/*` Docker images on CockroachDB.
+</details>
 
-## Usage
+---
 
-### In Dokploy
+## Auto-Generated Configuration
 
-1. Go to **Templates** in Dokploy
-2. Import this template
-3. Set your domain (e.g., `huly.yourdomain.com`)
-4. Deploy!
-
-### Manual Testing
-
-If you want to test manually:
-
-1. Copy `docker-compose.yml` and `template.toml` to your Dokploy templates folder
-2. Deploy via Dokploy
-
-## Configuration
-
-The template auto-generates these values:
+Dokploy auto-generates these secrets at deploy time -- no manual setup needed:
 
 | Variable | Type | Description |
 |----------|------|-------------|
@@ -320,6 +281,8 @@ The template auto-generates these values:
 | `redpanda_password` | password:16 | Redpanda admin password |
 | `livekit_api_key` | password:16 | LiveKit API key (for video calls) |
 | `livekit_api_secret` | base64:32 | LiveKit API secret (for video calls) |
+
+---
 
 ## Optional: GitHub Integration
 
@@ -417,61 +380,54 @@ To enable the Telegram bot:
 TELEGRAM_BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
 ```
 
-### Speech-to-Text (STT) for Video Calls
+### Speech-to-Text (STT) for Meeting Transcription (V7 Next only)
 
-Huly can transcribe meeting audio in real-time. The **love-agent** captures audio from LiveKit and sends chunks to the **aibot** for transcription.
+Huly can transcribe meeting audio in real-time. The **love-agent** service (official `hardcoreeng/love-agent` image) captures audio from LiveKit rooms and sends transcriptions to the **aibot**, which saves them as Meeting Minutes.
+
+Two STT providers are supported:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `STT_PROVIDER` | *(empty -- disabled)* | Transcription backend: `openai` (Whisper API), `deepgram`, or `server` |
-| `STT_URL` | *(empty)* | Custom Whisper endpoint (only for `openai` provider). Leave empty for OpenAI cloud. Set for self-hosted (e.g., `http://your-whisper:9007`) |
-| `STT_API_KEY` | *(empty)* | API key for your STT provider. For `openai`: your OpenAI key. For `deepgram`: your Deepgram key |
-| `STT_MODEL` | `whisper-1` / `nova-2` | Model to use. `whisper-1` for OpenAI, `nova-2` for Deepgram |
-| `LOVE_AGENT_STT_PROVIDER` | `stream` | **Do not change.** The haiodo fork only supports `stream` mode |
+| `STT_PROVIDER` | `deepgram` | Transcription backend: `deepgram` or `openai` |
+| `DEEPGRAM_API_KEY` | *(empty)* | API key for Deepgram (default model: `nova-3`) |
+| `OPENAI_API_KEY` | *(set above)* | Reused from AI config. OpenAI STT uses the **Realtime WebSocket API** (`gpt-4o-transcribe`), not Whisper |
 
-**Example -- Use OpenAI Whisper (same key as AI assistant):**
-```
-STT_PROVIDER=openai
-```
-(Uses `OPENAI_API_KEY` automatically -- no need to set `STT_API_KEY` separately if already configured)
-
-**Example -- Use Deepgram:**
+**Example -- Deepgram (recommended):**
 ```
 STT_PROVIDER=deepgram
-STT_API_KEY=your-deepgram-api-key
+DEEPGRAM_API_KEY=your-deepgram-api-key
 ```
 
-**Example -- Self-hosted Whisper (faster-whisper, etc.):**
+**Example -- OpenAI (uses Realtime API, not Whisper):**
 ```
 STT_PROVIDER=openai
-STT_URL=http://your-whisper-server:9007
-STT_API_KEY=not-needed
-STT_MODEL=whisper-large-v3
 ```
+(Uses `OPENAI_API_KEY` from the AI assistant config above -- no extra key needed)
+
+> **Note:** The love-agent generates its `PLATFORM_TOKEN` automatically at startup by authenticating with the accounts service. If the token generation fails (e.g., accounts service is slow to start), the love-agent will retry on restart. Video calls work regardless -- only transcription is affected.
 
 ## Troubleshooting
 
-### Login loop / Logged out on refresh
+### Login doesn't persist after refresh
+- Make sure HTTPS is enabled on your domain
+- Check that `HOST_ADDRESS` matches your actual domain
+- Check the nginx entrypoint logs: `docker logs <nginx-container> | head -20` -- you should see the parent domain being calculated
+- Verify cookies in browser dev tools: F12 -> Application -> Cookies -> check the domain is correct
+- Redeploy the app
 
-If you're still being logged out on refresh:
+### Video calls not working
+- Check that ports 7881/tcp, 3478/udp, and 50000-50100/udp are open on your server firewall
+- Verify `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` are set in the environment (auto-generated at deploy time)
+- Try redeploying
 
-1. Check the nginx entrypoint logs:
-   ```
-   docker logs <nginx-container> | head -20
-   ```
-   You should see the parent domain being calculated
+### Sign Up shows error (V7 Next only)
+- **This is cosmetic.** In v0.7.353, signup creates your account but does not return a login token. The frontend tries to set a session cookie and fails, showing "Unknown error: Unexpected token...".
+- **Your account was created.** Go to the **Sign In** page, enter your email/password, and complete the OTP email verification to log in.
 
-2. Verify the cookie domain in browser dev tools:
-   - Open F12 -> Application -> Cookies
-   - Check that cookies have the correct domain
-
-### Database connection errors
-
-CockroachDB (V7 Next) or PostgreSQL (V7 Legacy) needs time to initialize. If you see connection errors, wait 30 seconds and redeploy.
-
-### Services not starting
-
-Check that all services are on the same Docker network. Dokploy should handle this automatically.
+### 502 Bad Gateway
+- Wait a few seconds and refresh -- services take time to start
+- CockroachDB / PostgreSQL may need up to 30 seconds to initialize on first deploy
+- If persists, go to Deployments tab and redeploy
 
 ## Development
 
@@ -503,13 +459,18 @@ The `huly` subcommand updates `HULY_VERSION` in `template.toml`, syncs the Huly 
 ```
 VERSION                            # Template semver (single source of truth)
 meta.json                          # Dokploy blueprint registry (version badge + description)
+CHANGELOG.md                       # Release history for both blueprints
 scripts/
   bump-version.sh                  # Bump template or Huly version across all files
   pre-commit                       # Git hook: auto patch bump on blueprint changes
   install-hooks.sh                 # Install git hooks after cloning
-blueprints/huly-v7/
+blueprints/huly-v7/                # Legacy: haiodo/* v0.7.315 on PostgreSQL
   template.toml                    # Dokploy template (env vars, mounts, domains)
   docker-compose.yml               # 29 services orchestration
+  huly.svg                         # Logo for Dokploy UI
+blueprints/huly-v7-next/           # Official: hardcoreeng/* v0.7.353 on CockroachDB
+  template.toml                    # Dokploy template (env vars, mounts, domains)
+  docker-compose.yml               # 34 services orchestration
   huly.svg                         # Logo for Dokploy UI
 ```
 

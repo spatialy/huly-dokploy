@@ -222,7 +222,7 @@ Two blueprints are available:
 
 ### Huly V7 Next -- `hardcoreeng/*` images on CockroachDB
 
-34 services using official `hardcoreeng/*` Docker images on CockroachDB at v0.7.353.
+35 services using official `hardcoreeng/*` Docker images on CockroachDB at v0.7.353.
 
 <details>
 <summary>Service list</summary>
@@ -263,6 +263,7 @@ Two blueprints are available:
 | calendar | v0.7.353 | Google Calendar sync (optional) |
 | gmail | v0.7.353 | Gmail integration (optional) |
 | telegram-bot | v0.7.353 | Telegram bot (optional) |
+| cockroach-jobs | postgres:17-alpine | Reconciles meeting-minutes counters (workaround for [upstream bug](https://github.com/hcengineering/platform/pull/10527)) |
 
 </details>
 
@@ -424,6 +425,10 @@ STT_PROVIDER=openai
 - **This is cosmetic.** In v0.7.353, signup creates your account but does not return a login token. The frontend tries to set a session cookie and fails, showing "Unknown error: Unexpected token...".
 - **Your account was created.** Go to the **Sign In** page, enter your email/password, and complete the OTP email verification to log in.
 
+### Meeting minutes not showing (V7 Next only)
+- This is a known upstream bug ([PR #10527](https://github.com/hcengineering/platform/pull/10527)). Meeting minutes are saved to the database but the UI counter is never incremented, so the UI shows "No meeting minutes".
+- The `cockroach-jobs` sidecar automatically reconciles these counters every 5 minutes (configurable via `RECONCILE_INTERVAL`). After one cycle, meeting minutes will appear in the UI.
+
 ### 502 Bad Gateway
 - Wait a few seconds and refresh -- services take time to start
 - CockroachDB / PostgreSQL may need up to 30 seconds to initialize on first deploy
@@ -470,7 +475,7 @@ blueprints/huly-v7/                # Legacy: haiodo/* v0.7.315 on PostgreSQL
   huly.svg                         # Logo for Dokploy UI
 blueprints/huly-v7-next/           # Official: hardcoreeng/* v0.7.353 on CockroachDB
   template.toml                    # Dokploy template (env vars, mounts, domains)
-  docker-compose.yml               # 34 services orchestration
+  docker-compose.yml               # 35 services orchestration
   huly.svg                         # Logo for Dokploy UI
 ```
 

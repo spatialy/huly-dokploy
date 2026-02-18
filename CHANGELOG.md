@@ -4,6 +4,9 @@ All notable changes to this project are documented here. This project maintains 
 
 ## huly-v7-next
 
+### v3.0.6 (2026-02-18)
+- **fix**: Love-agent entrypoint token generation failing. Two bugs: (1) `login` RPC was sending params as array `['email', 'password']` but v0.7.353 accounts service expects object `{ email, password }` — caused `BadRequest`. (2) `loginOrSignUp` method doesn't exist in v0.7.353 — caused `UnknownMethod`. Added robust fallback: if `login` fails, generates a system JWT (HS256, signed with `SERVER_SECRET`) using the hardcoded `systemAccountUuid`, queries the accounts service for the ai-bot's `PersonUUID` via `findPersonBySocialKey`, then mints `PLATFORM_TOKEN` directly.
+
 ### v3.0.5 (2026-02-18)
 - **fix**: Switch love-agent from `haiodo/love-agent:v0.7.315` to official `hardcoreeng/love-agent`. The haiodo fork's JWT used a hardcoded `systemAccountUuid` that didn't match the aibot's `personUuid`, causing 401 on the identity endpoint. New entrypoint script generates `PLATFORM_TOKEN` at startup by logging in as the AI bot via the accounts service.
 - **change**: STT env vars updated for hardcoreeng love-agent. Old `STT_URL`/`STT_API_KEY`/`STT_MODEL` removed. New vars: `STT_PROVIDER` (`deepgram` or `openai`), `DEEPGRAM_API_KEY`, or `OPENAI_API_KEY`. OpenAI uses the Realtime WebSocket API (`gpt-4o-transcribe`), not Whisper — `whisper-1` is not supported.

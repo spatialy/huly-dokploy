@@ -484,6 +484,18 @@ services:
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
     restart: unless-stopped
 
+  cockroach-jobs:
+    image: postgres:17-alpine
+    entrypoint: ["/bin/sh", "/reconcile.sh"]
+    depends_on:
+      - cockroach
+    environment:
+      - CR_DB_URL=${CR_DB_URL}
+      - RECONCILE_INTERVAL=${RECONCILE_INTERVAL:-300}
+    volumes:
+      - ../files/volumes/cockroach-jobs/reconcile.sh:/reconcile.sh:ro
+    restart: unless-stopped
+
   love-agent:
     image: hardcoreeng/love-agent:${HULY_VERSION}
     entrypoint: ["/bin/sh", "/entrypoint.sh"]

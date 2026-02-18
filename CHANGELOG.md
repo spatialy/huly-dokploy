@@ -4,6 +4,9 @@ All notable changes to this project are documented here. This project maintains 
 
 ## huly-v7-next
 
+### v3.0.8 (2026-02-18)
+- **add**: Meeting-minutes counter reconciliation sidecar (`cockroach-jobs`). Workaround for upstream bug ([PR #10527](https://github.com/hcengineering/platform/pull/10527)) where MeetingMinutes are created via `createDoc` instead of `addCollection`, so the Room's `meetings` counter is never incremented and the UI shows "No meeting minutes". A `postgres:17-alpine` sidecar runs `psql` every 5 minutes (configurable via `RECONCILE_INTERVAL`) to set each Room's counter to the actual MeetingMinutes count. Will be removed once the upstream fix is released.
+
 ### v3.0.7 (2026-02-18)
 - **fix**: Love-agent crash loop — wrong entry point. Was running `node agent.js` which just exports the module and exits silently. Correct command is `node index.js start` (LiveKit Agent SDK CLI requires the `start` argument to enter worker mode).
 - **docs**: Consolidate README — merge duplicate sections, rewrite STT docs for hardcoreeng love-agent (Deepgram/OpenAI Realtime API), fix love-agent version in service table, add huly-v7-next to file structure, wrap service tables in collapsible `<details>`.

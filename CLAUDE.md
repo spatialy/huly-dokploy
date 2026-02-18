@@ -16,17 +16,31 @@ VERSION                                # Template semver (single source of truth
 meta.json                              # Blueprint registry: huly-v7 + huly-v7-next
 README.md                              # User-facing deployment guide
 scripts/bump-version.sh                # Bump template version across all files
-blueprints/huly-v7/                    # Legacy: haiodo/* v0.7.315
+blueprints/huly-v7/                    # Dokploy: haiodo/* v0.7.315 (legacy)
   template.toml                        # Dokploy template: variables, env, domains, mounted files
   docker-compose.yml                   # 29 services orchestration (including LiveKit)
   huly.svg                             # Logo for Dokploy UI
-blueprints/huly-v7-next/               # New: hardcoreeng/* v0.7.353
+blueprints/huly-v7-next/               # Dokploy: hardcoreeng/* v0.7.353
   template.toml                        # Same structure, official upstream images
   docker-compose.yml                   # 35 services (CockroachDB, kvs, calendar, gmail, telegram, love-agent, cockroach-jobs)
   huly.svg                             # Logo for Dokploy UI
+coolify/
+  huly-v7-next/                        # Coolify / Docker Compose: standard deployment
+    docker-compose.yml                 # Self-contained compose (same 35 services, ./volumes/ paths)
+    .env.example                       # Documented env template with secret generation commands
+    volumes/                           # Config files extracted from template.toml inline mounts
+      nginx/entrypoint.sh              # Parent-domain calc + sed replacement
+      nginx/huly.nginx.conf            # Nginx config template (with placeholders)
+      livekit/entrypoint.sh            # Placeholder replacement + exec livekit-server
+      livekit/livekit.yaml             # LiveKit config template
+      love-agent/entrypoint.sh         # JWT generation + exec node index.js start
+      cockroach-jobs/reconcile.sh      # Meeting-minutes counter reconciliation
+  huly.yaml                            # Coolify upstream template (single file, SERVICE_* magic vars)
 ```
 
-`template.toml` is the single source of truth — it contains the nginx config, entrypoint script, and livekit.yaml as inline `[[config.mounts]]` entries.
+**Dokploy**: `template.toml` is the single source of truth — it contains the nginx config, entrypoint script, and livekit.yaml as inline `[[config.mounts]]` entries.
+
+**Coolify / Docker Compose**: `coolify/huly-v7-next/` contains standalone files extracted from `template.toml`. The `docker-compose.yml` uses `./volumes/` relative paths instead of `../files/volumes/`. Works with Coolify (Git repo deployment), Portainer, Dockge, or bare `docker compose up`. The `coolify/huly.yaml` is a single-file Coolify service template with `SERVICE_*` auto-generated secrets and inline `content:` directives.
 
 ## Architecture
 

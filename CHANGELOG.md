@@ -4,6 +4,16 @@ All notable changes to this project are documented here. This project maintains 
 
 ## huly-v7-next
 
+### v3.1.0 (2026-02-18)
+- **add**: Coolify and Docker Compose support — two new deployment methods alongside existing Dokploy blueprints:
+  - `coolify/huly-v7-next/` — Standard Docker Compose directory with real config files. Works with Coolify (Git repo), Portainer, Dockge, or bare `docker compose up`. Includes `.env.example` with documented variables and secret generation commands.
+  - `coolify/huly.yaml` — Single-file Coolify service template with `SERVICE_*` magic variables for auto-generated secrets and `content:` directives for inline config files. Ready for future PR to `coollabsio/coolify`.
+- Config files extracted from `template.toml` inline mounts into standalone files under `coolify/huly-v7-next/volumes/` (nginx, livekit, love-agent, cockroach-jobs).
+- Dokploy files unchanged — all deployment methods coexist.
+
+### v3.0.9 (2026-02-18)
+- **fix**: Telegram-bot using wrong image (`hardcoreeng/telegram` instead of broken MTProto `telegram` image).
+
 ### v3.0.8 (2026-02-18)
 - **add**: Meeting-minutes counter reconciliation sidecar (`cockroach-jobs`). Workaround for upstream bug ([PR #10527](https://github.com/hcengineering/platform/pull/10527)) where MeetingMinutes are created via `createDoc` instead of `addCollection`, so the Room's `meetings` counter is never incremented and the UI shows "No meeting minutes". A `postgres:17-alpine` sidecar runs `psql` every 5 minutes (configurable via `RECONCILE_INTERVAL`) to set each Room's counter to the actual MeetingMinutes count. Will be removed once the upstream fix is released.
 

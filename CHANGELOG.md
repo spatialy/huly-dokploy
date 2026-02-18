@@ -6,7 +6,7 @@ All notable changes to this project are documented here. This project maintains 
 
 ### v3.0.5 (2026-02-18)
 - **fix**: Switch love-agent from `haiodo/love-agent:v0.7.315` to official `hardcoreeng/love-agent`. The haiodo fork's JWT used a hardcoded `systemAccountUuid` that didn't match the aibot's `personUuid`, causing 401 on the identity endpoint. New entrypoint script generates `PLATFORM_TOKEN` at startup by logging in as the AI bot via the accounts service.
-- **change**: STT env vars now follow hardcoreeng naming — `DEEPGRAM_API_KEY` replaces `STT_API_KEY`, default provider changed from `stream` to `deepgram`.
+- **change**: STT env vars updated for hardcoreeng love-agent. Old `STT_URL`/`STT_API_KEY`/`STT_MODEL` removed. New vars: `STT_PROVIDER` (`deepgram` or `openai`), `DEEPGRAM_API_KEY`, or `OPENAI_API_KEY`. OpenAI uses the Realtime WebSocket API (`gpt-4o-transcribe`), not Whisper — `whisper-1` is not supported.
 
 ### v3.0.4 (2026-02-18)
 - **fix**: LiveKit meetings returning 404. Variable-based `proxy_pass $upstream_livekit` doesn't strip the `/livekit/` prefix like static `proxy_pass` does. Added missing `rewrite ^/livekit(/.*)$ $1 break;` rule (matching the pattern used by all other location blocks).

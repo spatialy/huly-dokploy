@@ -58,10 +58,11 @@ env = [
   "TELEGRAM_BOT_TOKEN=",
   "TELEGRAM_CHAT_ID=",
   "# Speech-to-Text for Meeting Transcription (optional - used by love-agent)",
-  "STT_PROVIDER=stream",
-  "STT_URL=",
-  "STT_API_KEY=",
-  "STT_MODEL=",
+  "# STT_PROVIDER: 'deepgram' (default) or 'openai' (uses Realtime API, not Whisper)",
+  "STT_PROVIDER=deepgram",
+  "# For Deepgram: set DEEPGRAM_API_KEY (default model: nova-3)",
+  "DEEPGRAM_API_KEY=",
+  "# For OpenAI: uses OPENAI_API_KEY from above (default model: gpt-4o-transcribe)",
   "LOVE_AGENT_DEBUG=false",
 ]
 

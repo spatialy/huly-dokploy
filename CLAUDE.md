@@ -100,7 +100,7 @@ These feed into `[config] env` which becomes the `.env` for docker-compose. The 
 
 ### Optional
 - `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`, `OPENAI_SUMMARY_MODEL`, `OPENAI_TRANSLATE_MODEL` — AI assistant (any OpenAI-compatible provider)
-- `STT_PROVIDER`, `STT_API_KEY` — Speech-to-Text for meeting transcription (love-agent). Provider is `deepgram` (default) or `openai`. Key is passed as `DEEPGRAM_API_KEY` or `OPENAI_API_KEY` respectively.
+- `STT_PROVIDER` — Speech-to-Text for meeting transcription (love-agent). Provider is `deepgram` (default, key: `DEEPGRAM_API_KEY`, model: nova-3) or `openai` (uses `OPENAI_API_KEY` from AI config, model: gpt-4o-transcribe via Realtime WebSocket API — NOT Whisper).
 - `GOOGLE_CREDENTIALS` — Google OAuth credentials JSON for Calendar/Gmail integration
 - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` — Telegram bot integration (get token from @BotFather)
 - `GITHUB_APPID`, `GITHUB_CLIENTID`, `GITHUB_CLIENT_SECRET`, `GITHUB_PRIVATE_KEY`, `GITHUB_BOT_NAME` — GitHub integration

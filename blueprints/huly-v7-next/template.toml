@@ -9,7 +9,7 @@ livekit_api_secret = "${base64:32}"
 [config]
 env = [
   "HULY_VERSION=v0.7.353",
-  "TEMPLATE_VERSION=v3.0.4",
+  "TEMPLATE_VERSION=v3.0.5",
   "DOCKER_NAME=huly_v7",
   "HOST_ADDRESS=${main_domain}",
   "SECRET=${huly_secret}",
@@ -411,4 +411,101 @@ keys:
 logging:
   json: false
   level: info
+"""
+
+# Love Agent entrypoint script (generates PLATFORM_TOKEN at runtime)
+# The hardcoreeng love-agent requires a PLATFORM_TOKEN JWT containing the
+# aibot's personUuid, signed with SERVER_SECRET. This script discovers the
+# personUuid by logging in as the AI bot via the accounts service.
+[[config.mounts]]
+filePath = "/volumes/love-agent/entrypoint.sh"
+content = """
+#!/bin/sh
+set -e
+
+echo "=== Love Agent Entrypoint ==="
+echo "Generating PLATFORM_TOKEN for love-agent..."
+
+# Write token generation script (Node.js is available in the image)
+cat > /tmp/gen-token.js << 'GENTOKEN'
+const http = require('http');
+
+function post(host, port, body) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(body);
+    const req = http.request({
+      hostname: host, port, method: 'POST', path: '/',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }
+    }, (res) => {
+      let chunks = '';
+      res.on('data', c => chunks += c);
+      res.on('end', () => {
+        try { resolve(JSON.parse(chunks)); }
+        catch (e) { reject(new Error('Bad JSON: ' + chunks.slice(0, 200))); }
+      });
+    });
+    req.on('error', reject);
+    req.write(data);
+    req.end();
+  });
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Try multiple RPC methods to login as the AI bot
+async function tryLogin() {
+  // Method 1: login(email, password)
+  const r1 = await post('account', 3000, {
+    method: 'login',
+    params: ['huly.ai.bot@hc.engineering', 'password']
+  });
+  if (r1.result) {
+    const t = typeof r1.result === 'string' ? r1.result : r1.result.token;
+    if (t) return t;
+  }
+
+  // Method 2: loginOrSignUp with object param
+  const r2 = await post('account', 3000, {
+    method: 'loginOrSignUp',
+    params: [{ email: 'huly.ai.bot@hc.engineering', password: 'password', firstName: 'Huly', lastName: 'AI' }]
+  });
+  if (r2.result) {
+    const t = typeof r2.result === 'string' ? r2.result : r2.result.token;
+    if (t) return t;
+  }
+
+  throw new Error('login: ' + JSON.stringify(r1).slice(0, 200) + ' | loginOrSignUp: ' + JSON.stringify(r2).slice(0, 200));
+}
+
+async function main() {
+  for (let attempt = 1; attempt <= 60; attempt++) {
+    try {
+      const token = await tryLogin();
+      process.stdout.write(token);
+      return;
+    } catch (e) {
+      process.stderr.write('Attempt ' + attempt + '/60: ' + e.message + '\\n');
+    }
+    await sleep(5000);
+  }
+  process.stderr.write('FATAL: Could not generate PLATFORM_TOKEN after 60 attempts\\n');
+  process.exit(1);
+}
+
+main();
+GENTOKEN
+
+# Run token generation
+PLATFORM_TOKEN=$(node /tmp/gen-token.js)
+export PLATFORM_TOKEN
+rm -f /tmp/gen-token.js
+
+if [ -z "$PLATFORM_TOKEN" ]; then
+  echo "ERROR: PLATFORM_TOKEN is empty"
+  exit 1
+fi
+
+echo "PLATFORM_TOKEN generated successfully"
+echo "Starting love-agent..."
+exec node /usr/src/app/agent.js
 """

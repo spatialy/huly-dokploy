@@ -485,22 +485,26 @@ services:
     restart: unless-stopped
 
   love-agent:
-    image: haiodo/love-agent:v0.7.315
+    image: hardcoreeng/love-agent:${HULY_VERSION}
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
     extra_hosts: ['host.docker.internal:host-gateway']
     depends_on:
       - love
       - aibot
+      - account
     environment:
       - SERVER_SECRET=${SECRET}
+      - ACCOUNTS_URL=http://account:3000
       - PLATFORM_URL=http://aibot:4010
       - LIVEKIT_URL=ws://livekit:7880
       - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
-      - STT_PROVIDER=${STT_PROVIDER:-stream}
-      - STT_URL=${STT_URL:-}
-      - STT_API_KEY=${STT_API_KEY:-}
-      - STT_MODEL=${STT_MODEL:-}
+      - STT_PROVIDER=${STT_PROVIDER:-deepgram}
+      - DEEPGRAM_API_KEY=${STT_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - DEBUG=${LOVE_AGENT_DEBUG:-false}
+    volumes:
+      - ../files/volumes/love-agent/entrypoint.sh:/entrypoint.sh
     restart: unless-stopped
 
 volumes:

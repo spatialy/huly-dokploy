@@ -7,7 +7,7 @@ Dokploy blueprint template for self-hosting [Huly V7](https://huly.io/) — an a
 Forked from `shali1995/huly-dokploy-fucking-working`. Two blueprints are available:
 
 - **`huly-v7`** (v1.1.2) — Legacy blueprint using `haiodo/*` images at v0.7.315 (from the intabia-fusion PostgreSQL fork). Stable fallback.
-- **`huly-v7-next`** (v3.0.0) — Uses official `hardcoreeng/*` upstream images at v0.7.353 on CockroachDB (matching the official upstream). Full service stack including `kvs`, `calendar`, `gmail`, `telegram-bot`, `link-preview`, `aibot` + MongoDB, and experimental `love-agent` (haiodo v0.7.315). **Breaking change from v2.x** — migrated from PostgreSQL to CockroachDB.
+- **`huly-v7-next`** (v3.0.0+) — Uses official `hardcoreeng/*` upstream images at v0.7.353 on CockroachDB (matching the official upstream). Full service stack including `kvs`, `calendar`, `gmail`, `telegram-bot`, `link-preview`, `aibot` + MongoDB, and `love-agent` (meeting transcription). **Breaking change from v2.x** — migrated from PostgreSQL to CockroachDB.
 
 ## Repository Structure
 
@@ -100,7 +100,7 @@ These feed into `[config] env` which becomes the `.env` for docker-compose. The 
 
 ### Optional
 - `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`, `OPENAI_SUMMARY_MODEL`, `OPENAI_TRANSLATE_MODEL` — AI assistant (any OpenAI-compatible provider)
-- `STT_PROVIDER`, `STT_URL`, `STT_API_KEY`, `STT_MODEL` — Speech-to-Text for meeting transcription (love-agent)
+- `STT_PROVIDER`, `STT_API_KEY` — Speech-to-Text for meeting transcription (love-agent). Provider is `deepgram` (default) or `openai`. Key is passed as `DEEPGRAM_API_KEY` or `OPENAI_API_KEY` respectively.
 - `GOOGLE_CREDENTIALS` — Google OAuth credentials JSON for Calendar/Gmail integration
 - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` — Telegram bot integration (get token from @BotFather)
 - `GITHUB_APPID`, `GITHUB_CLIENTID`, `GITHUB_CLIENT_SECRET`, `GITHUB_PRIVATE_KEY`, `GITHUB_BOT_NAME` — GitHub integration
@@ -164,9 +164,9 @@ These services are excluded from the huly-v7-next blueprint:
 | **notification** | Requires push notification keys. | No push notifications. |
 | **worker** | Requires Temporal.io infrastructure. Too heavy for self-hosting. | Deferred indefinitely. |
 
-### Experimental: love-agent
+### love-agent token generation
 
-The `love-agent` service uses `haiodo/love-agent:v0.7.315` (the legacy fork image, NOT `hardcoreeng`). The `hardcoreeng` version requires a `PlatformToken` (cloud-only auth pattern), but the haiodo fork generates tokens internally from `SERVER_SECRET`. This is experimental — cross-version compatibility (haiodo v0.7.315 love-agent talking to hardcoreeng v0.7.353 aibot) is not guaranteed. If it doesn't work, the love-agent can be removed without affecting video calls.
+The `love-agent` service uses `hardcoreeng/love-agent` (official image). It requires a `PLATFORM_TOKEN` — a JWT containing the aibot's `personUuid`, signed with `SERVER_SECRET`. The cloud version gets this token from infrastructure; for self-hosting, a custom entrypoint script generates it at startup by logging in as the AI bot (`huly.ai.bot@hc.engineering`) via the accounts service. This follows the same entrypoint pattern used for nginx and livekit configs. If the token generation fails (e.g., accounts service unreachable), the love-agent won't start but video calls still work — only transcription is affected.
 
 ## Upstream References
 

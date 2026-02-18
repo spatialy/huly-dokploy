@@ -22,7 +22,7 @@ blueprints/huly-v7/                    # Legacy: haiodo/* v0.7.315
   huly.svg                             # Logo for Dokploy UI
 blueprints/huly-v7-next/               # New: hardcoreeng/* v0.7.353
   template.toml                        # Same structure, official upstream images
-  docker-compose.yml                   # 34 services (CockroachDB, kvs, calendar, gmail, telegram, love-agent)
+  docker-compose.yml                   # 35 services (CockroachDB, kvs, calendar, gmail, telegram, love-agent, cockroach-jobs)
   huly.svg                             # Logo for Dokploy UI
 ```
 
@@ -45,6 +45,7 @@ All traffic enters through **nginx:80**, which routes by URL path prefix:
 | **Core** | account:3000, transactor:3333, front:8080, workspace, collaborator:3078, fulltext:4700, kvs:8094 |
 | **Feature** | love:8097 (video), love-agent (transcription), aibot:4010 (AI), stats:4900, hulypulse:8098, stream:1081, media, preview:4043, datalake:4031, rekoni:4004, print:4005, github:3500, mail:8097, rating, process-service, link-preview:4041 |
 | **Integrations** | calendar:8095 (Google Calendar), gmail:8087 (Gmail), telegram-bot:8086 (Telegram) |
+| **Maintenance** | cockroach-jobs (meeting-minutes counter reconciliation) |
 
 ### Database Architecture
 
@@ -52,7 +53,7 @@ All traffic enters through **nginx:80**, which routes by URL path prefix:
 
 **huly-v7 (legacy)** uses **PostgreSQL** via `haiodo/*` images from the intabia-fusion fork, which patched services to remove CockroachDB and MongoDB dependencies.
 
-The official [huly-selfhost](https://github.com/hcengineering/huly-selfhost) runs ~14 services on CockroachDB. Our `huly-v7-next` runs **34 services** — the extra services (datalake, love, livekit, kvs, calendar, gmail, telegram, love-agent, aibot, rating, hulypulse, stream, media, preview, rekoni, print, github, mail, process-service, link-preview, mongo) are cloud/enterprise features not included in the official self-hosting guide.
+The official [huly-selfhost](https://github.com/hcengineering/huly-selfhost) runs ~14 services on CockroachDB. Our `huly-v7-next` runs **35 services** — the extra services (datalake, love, livekit, kvs, calendar, gmail, telegram, love-agent, aibot, rating, hulypulse, stream, media, preview, rekoni, print, github, mail, process-service, link-preview, mongo, cockroach-jobs) are cloud/enterprise features not included in the official self-hosting guide.
 
 ### LiveKit Integration
 
@@ -163,6 +164,14 @@ These services are excluded from the huly-v7-next blueprint:
 | **backup, export** | Straightforward to add. Planned for next phase. | No backup/export functionality yet. |
 | **notification** | Requires push notification keys. | No push notifications. |
 | **worker** | Requires Temporal.io infrastructure. Too heavy for self-hosting. | Deferred indefinitely. |
+
+### cockroach-jobs (meeting-minutes counter reconciliation)
+
+The `cockroach-jobs` service is a `postgres:17-alpine` sidecar that works around an upstream bug ([PR #10527](https://github.com/hcengineering/platform/pull/10527)) where MeetingMinutes are created via `createDoc` instead of `addCollection`, so the Room's `meetings` collection counter is never incremented. The UI guards on `meetings > 0`, making all meeting minutes invisible even though data is saved correctly.
+
+The sidecar runs a `psql` sleep loop (default every 300s, configurable via `RECONCILE_INTERVAL`) that sets each Room/Office's `meetings` counter to the actual count of MeetingMinutes. It connects to CockroachDB via `CR_DB_URL` (CockroachDB speaks the postgres wire protocol, so `psql` works natively). The reconciliation script is mounted from `template.toml` via the same `[[config.mounts]]` pattern used by nginx and livekit.
+
+**Remove this service once the upstream fix is released in a new Huly version.**
 
 ### love-agent token generation
 

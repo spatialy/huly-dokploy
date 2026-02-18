@@ -9,7 +9,7 @@ livekit_api_secret = "${base64:32}"
 [config]
 env = [
   "HULY_VERSION=v0.7.353",
-  "TEMPLATE_VERSION=v3.0.6",
+  "TEMPLATE_VERSION=v3.0.7",
   "DOCKER_NAME=huly_v7",
   "HOST_ADDRESS=${main_domain}",
   "SECRET=${huly_secret}",
@@ -552,5 +552,5 @@ fi
 
 echo "PLATFORM_TOKEN generated successfully (${#PLATFORM_TOKEN} chars)"
 echo "Starting love-agent..."
-exec node /usr/src/app/agent.js
+exec node /usr/src/app/index.js start
 """

@@ -9,7 +9,7 @@ livekit_api_secret = "${base64:32}"
 [config]
 env = [
   "HULY_VERSION=v0.7.353",
-  "TEMPLATE_VERSION=v3.0.9",
+  "TEMPLATE_VERSION=v3.1.0",
   "DOCKER_NAME=huly_v7",
   "HOST_ADDRESS=${main_domain}",
   "SECRET=${huly_secret}",
@@ -65,6 +65,12 @@ env = [
   "LOVE_AGENT_DEBUG=false",
   "# Meeting-minutes counter reconciliation interval in seconds (workaround for upstream bug)",
   "RECONCILE_INTERVAL=300",
+  "# Push Notifications (optional — generate VAPID keys with: npx web-push generate-vapid-keys)",
+  "PUSH_PUBLIC_KEY=",
+  "PUSH_PRIVATE_KEY=",
+  "PUSH_SUBJECT=mailto:noreply@example.com",
+  "# PDF Signing certificate password (default 'password' for auto-generated self-signed cert)",
+  "SIGN_CERTIFICATE_PASSWORD=password",
 ]
 
 [[config.domains]]
@@ -349,6 +355,41 @@ server {
         proxy_pass $upstream_telegram;
     }
 
+    # Backup API
+    location /_backup {
+        set $upstream_backup http://backup-api:4039;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        rewrite ^/_backup(/.*)$ $1 break;
+        proxy_pass $upstream_backup;
+    }
+
+    # Export (extended timeouts for large workspace exports)
+    location /_export {
+        set $upstream_export http://export:4009;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 600;
+        proxy_send_timeout 600;
+        rewrite ^/_export(/.*)$ $1 break;
+        proxy_pass $upstream_export;
+    }
+
+    # Sign (PDF digital signatures)
+    location /_sign {
+        set $upstream_sign http://sign:4006;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        rewrite ^/_sign(/.*)$ $1 break;
+        proxy_pass $upstream_sign;
+    }
+
     # LiveKit signaling (WebSocket)
     location /livekit/ {
         set $upstream_livekit http://livekit:7880;
@@ -588,4 +629,34 @@ while true; do
     || echo "[$(date -Iseconds)] Reconciliation failed"
   sleep "$INTERVAL"
 done
+"""
+
+# Sign service entrypoint: auto-generates self-signed PKCS#12 certificate if none exists
+[[config.mounts]]
+filePath = "/volumes/sign/entrypoint.sh"
+content = """
+#!/bin/sh
+set -e
+
+CERT_PATH="${CERTIFICATE_PATH:-/var/cfg/certificate.p12}"
+CERT_PASS="${CERTIFICATE_PASSWORD:-password}"
+
+echo "=== Sign Service Entrypoint ==="
+
+if [ ! -f "$CERT_PATH" ]; then
+  echo "No certificate found. Generating self-signed..."
+  openssl ecparam -genkey -name prime256v1 -out /tmp/sign-key.pem 2>/dev/null
+  openssl req -new -x509 -key /tmp/sign-key.pem -out /tmp/sign-cert.pem \
+    -days 3650 -subj "/CN=Huly Document Signing/O=Huly Self-Hosted" 2>/dev/null
+  openssl pkcs12 -export -out "$CERT_PATH" \
+    -inkey /tmp/sign-key.pem -in /tmp/sign-cert.pem \
+    -passout "pass:$CERT_PASS" 2>/dev/null
+  rm -f /tmp/sign-key.pem /tmp/sign-cert.pem
+  echo "Self-signed certificate generated. Replace with AATL cert for production."
+else
+  echo "Certificate found at $CERT_PATH"
+fi
+
+echo "Starting sign service..."
+exec dumb-init node bundle.js
 """

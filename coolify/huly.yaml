@@ -260,6 +260,41 @@ services:
                   proxy_pass $$upstream_telegram;
               }
 
+              # Backup API
+              location /_backup {
+                  set $$upstream_backup http://backup-api:4039;
+                  proxy_set_header Host $$host;
+                  proxy_set_header X-Real-IP $$remote_addr;
+                  proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto https;
+                  rewrite ^/_backup(/.*)$$ $$1 break;
+                  proxy_pass $$upstream_backup;
+              }
+
+              # Export (extended timeouts for large workspace exports)
+              location /_export {
+                  set $$upstream_export http://export:4009;
+                  proxy_set_header Host $$host;
+                  proxy_set_header X-Real-IP $$remote_addr;
+                  proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto https;
+                  proxy_read_timeout 600;
+                  proxy_send_timeout 600;
+                  rewrite ^/_export(/.*)$$ $$1 break;
+                  proxy_pass $$upstream_export;
+              }
+
+              # Sign (PDF digital signatures)
+              location /_sign {
+                  set $$upstream_sign http://sign:4006;
+                  proxy_set_header Host $$host;
+                  proxy_set_header X-Real-IP $$remote_addr;
+                  proxy_set_header X-Forwarded-For $$proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto https;
+                  rewrite ^/_sign(/.*)$$ $$1 break;
+                  proxy_pass $$upstream_sign;
+              }
+
               # LiveKit signaling (WebSocket)
               location /livekit/ {
                   set $$upstream_livekit http://livekit:7880;
@@ -510,6 +545,7 @@ services:
       - QUEUE_CONFIG=redpanda:9092
       - MAIL_URL=http://mail:8097
       - AI_BOT_URL=http://aibot:4010
+      - WEB_PUSH_URL=http://notification:8091
     restart: unless-stopped
 
   collaborator:
@@ -592,6 +628,10 @@ services:
       - LIVEKIT_WS=wss://${HOST_ADDRESS:-huly.example.com}/livekit
       - LINK_PREVIEW_URL=http://link-preview:4041
       - AI_URL=https://${HOST_ADDRESS:-huly.example.com}/_ai
+      - PUSH_PUBLIC_KEY=${PUSH_PUBLIC_KEY:-}
+      - BACKUP_URL=https://${HOST_ADDRESS:-huly.example.com}/_backup/api/backup
+      - EXPORT_URL=https://${HOST_ADDRESS:-huly.example.com}/_export
+      - SIGN_URL=https://${HOST_ADDRESS:-huly.example.com}/_sign
     restart: unless-stopped
 
   datalake:
@@ -1021,6 +1061,114 @@ services:
         is_directory: false
     restart: unless-stopped
 
+  notification:
+    image: hardcoreeng/notification:${HULY_VERSION:-v0.7.353}
+    environment:
+      - PORT=8091
+      - SOURCE=notification
+      - PUSH_PUBLIC_KEY=${PUSH_PUBLIC_KEY:-}
+      - PUSH_PRIVATE_KEY=${PUSH_PRIVATE_KEY:-}
+      - PUSH_SUBJECT=${PUSH_SUBJECT:-mailto:noreply@example.com}
+    restart: unless-stopped
+
+  backup:
+    image: hardcoreeng/backup:${HULY_VERSION:-v0.7.353}
+    depends_on:
+      - cockroach
+      - minio
+      - account
+    environment:
+      - SECRET=${SERVICE_PASSWORD_SECRET}
+      - ACCOUNTS_URL=http://account:3000
+      - ACCOUNTS_DB_URL=postgres://huly:${SERVICE_PASSWORD_COCKROACH}@cockroach:26257/huly
+      - DB_URL=postgres://huly:${SERVICE_PASSWORD_COCKROACH}@cockroach:26257/huly
+      - STORAGE=minio|minio?accessKey=minioadmin&secretKey=minioadmin
+      - WORKSPACE_STORAGE=minio|minio?accessKey=minioadmin&secretKey=minioadmin
+      - BUCKET_NAME=backups
+      - INTERVAL=3600
+      - TIMEOUT=3600
+      - COOL_DOWN=300
+      - PARALLEL=1
+      - KEEP_SNAPSHOTS=84
+      - QUEUE_CONFIG=redpanda:9092
+    restart: unless-stopped
+
+  backup-api:
+    image: hardcoreeng/backup-api:${HULY_VERSION:-v0.7.353}
+    depends_on:
+      - minio
+      - account
+    environment:
+      - PORT=4039
+      - SECRET=${SERVICE_PASSWORD_SECRET}
+      - ACCOUNTS_URL=http://account:3000
+      - BUCKET_NAME=backups
+      - STORAGE=minio|minio?accessKey=minioadmin&secretKey=minioadmin
+    restart: unless-stopped
+
+  export:
+    image: hardcoreeng/export:${HULY_VERSION:-v0.7.353}
+    depends_on:
+      - cockroach
+      - account
+    environment:
+      - PORT=4009
+      - SECRET=${SERVICE_PASSWORD_SECRET}
+      - SERVICE_ID=export-service
+      - DB_URL=postgres://huly:${SERVICE_PASSWORD_COCKROACH}@cockroach:26257/huly
+      - STORAGE_CONFIG=datalake|http://datalake:4031
+      - ACCOUNTS_URL=http://account:3000
+      - STATS_URL=http://stats:4900
+    restart: unless-stopped
+
+  sign:
+    image: hardcoreeng/sign:${HULY_VERSION:-v0.7.353}
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    depends_on:
+      - account
+      - minio
+    environment:
+      - PORT=4006
+      - SECRET=${SERVICE_PASSWORD_SECRET}
+      - SERVICE_ID=sign-service
+      - ACCOUNTS_URL=http://account:3000
+      - CERTIFICATE_PATH=/var/cfg/certificate.p12
+      - CERTIFICATE_PASSWORD=${SIGN_CERTIFICATE_PASSWORD:-password}
+      - STORAGE_CONFIG=datalake|http://datalake:4031
+      - QUEUE_CONFIG=redpanda:9092
+    volumes:
+      - sign_cert:/var/cfg
+      - type: bind
+        source: ./volumes/sign/entrypoint.sh
+        target: /entrypoint.sh
+        content: |
+          #!/bin/sh
+          set -e
+
+          CERT_PATH="$${CERTIFICATE_PATH:-/var/cfg/certificate.p12}"
+          CERT_PASS="$${CERTIFICATE_PASSWORD:-password}"
+
+          echo "=== Sign Service Entrypoint ==="
+
+          if [ ! -f "$$CERT_PATH" ]; then
+            echo "No certificate found. Generating self-signed..."
+            openssl ecparam -genkey -name prime256v1 -out /tmp/sign-key.pem 2>/dev/null
+            openssl req -new -x509 -key /tmp/sign-key.pem -out /tmp/sign-cert.pem \
+              -days 3650 -subj "/CN=Huly Document Signing/O=Huly Self-Hosted" 2>/dev/null
+            openssl pkcs12 -export -out "$$CERT_PATH" \
+              -inkey /tmp/sign-key.pem -in /tmp/sign-cert.pem \
+              -passout "pass:$$CERT_PASS" 2>/dev/null
+            rm -f /tmp/sign-key.pem /tmp/sign-cert.pem
+            echo "Self-signed certificate generated. Replace with AATL cert for production."
+          else
+            echo "Certificate found at $$CERT_PATH"
+          fi
+
+          echo "Starting sign service..."
+          exec dumb-init node bundle.js
+        is_directory: false
+    restart: unless-stopped
+
 volumes:
   cr_data:
   cr_certs:
@@ -1028,3 +1176,4 @@ volumes:
   files:
   mongo_data:
   redpanda:
+  sign_cert:

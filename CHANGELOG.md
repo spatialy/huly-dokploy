@@ -4,12 +4,18 @@ All notable changes to this project are documented here. This project maintains 
 
 ## huly-v7-next
 
-### v3.1.0 (2026-02-18)
+### v3.1.0 (2026-02-19)
 - **add**: Coolify and Docker Compose support — two new deployment methods alongside existing Dokploy blueprints:
   - `coolify/huly-v7-next/` — Standard Docker Compose directory with real config files. Works with Coolify (Git repo), Portainer, Dockge, or bare `docker compose up`. Includes `.env.example` with documented variables and secret generation commands.
   - `coolify/huly.yaml` — Single-file Coolify service template with `SERVICE_*` magic variables for auto-generated secrets and `content:` directives for inline config files. Ready for future PR to `coollabsio/coolify`.
 - Config files extracted from `template.toml` inline mounts into standalone files under `coolify/huly-v7-next/volumes/` (nginx, livekit, love-agent, cockroach-jobs).
 - Dokploy files unchanged — all deployment methods coexist.
+- **add**: Backup service (`hardcoreeng/backup`) — automatic hourly workspace backups to MinIO. Enabled by default, 84 snapshots retained.
+- **add**: Backup API (`hardcoreeng/backup-api`) — backup download endpoint at `/_backup/`.
+- **add**: Export service (`hardcoreeng/export`) — workspace data export as ZIP at `/_export/`.
+- **add**: Notification service (`hardcoreeng/notification`) — Web Push notifications via VAPID. Optional (needs user-generated keys via `npx web-push generate-vapid-keys`).
+- **add**: Sign service (`hardcoreeng/sign`) — PDF digital signatures. Auto-generates self-signed PKCS#12 cert on first start; replaceable with AATL cert for production.
+- Total services: 35 → 40.
 
 ### v3.0.9 (2026-02-18)
 - **fix**: Telegram-bot using wrong image (`hardcoreeng/telegram` instead of broken MTProto `telegram` image).

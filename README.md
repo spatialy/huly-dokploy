@@ -1,6 +1,6 @@
 # Huly V7 Self-Hosting Template
 
-Deploys [Huly V7](https://huly.io/) — an all-in-one project management platform — with **35 services**, built-in video calls (LiveKit), AI assistant, and a session persistence fix that prevents the logout-on-refresh bug.
+Deploys [Huly V7](https://huly.io/) — an all-in-one project management platform — with **40 services**, built-in video calls (LiveKit), AI assistant, automatic backups, and a session persistence fix that prevents the logout-on-refresh bug.
 
 **Supported platforms:** [Dokploy](#deploy-with-dokploy), [Coolify](#deploy-with-coolify), [Portainer / bare Docker Compose](#deploy-with-docker-compose)
 
@@ -295,7 +295,7 @@ Two blueprints are available:
 
 ### Huly V7 Next -- `hardcoreeng/*` images on CockroachDB
 
-35 services using official `hardcoreeng/*` Docker images on CockroachDB at v0.7.353.
+40 services using official `hardcoreeng/*` Docker images on CockroachDB at v0.7.353.
 
 <details>
 <summary>Service list</summary>
@@ -337,6 +337,11 @@ Two blueprints are available:
 | gmail | v0.7.353 | Gmail integration (optional) |
 | telegram-bot | v0.7.353 | Telegram bot (optional) |
 | cockroach-jobs | postgres:17-alpine | Reconciles meeting-minutes counters (workaround for [upstream bug](https://github.com/hcengineering/platform/pull/10527)) |
+| notification | v0.7.353 | Push notifications via VAPID (optional — requires keys) |
+| backup | v0.7.353 | Automatic workspace backup scheduler (hourly) |
+| backup-api | v0.7.353 | Backup download API |
+| export | v0.7.353 | Workspace data export (ZIP) |
+| sign | v0.7.353 | PDF digital signatures (auto-generates self-signed cert) |
 
 </details>
 
@@ -454,6 +459,50 @@ To enable the Telegram bot:
 TELEGRAM_BOT_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
 ```
 
+## Optional: Push Notifications (V7 Next only)
+
+Browser push notifications require VAPID keys. Without them, push notifications are silently disabled — everything else works normally.
+
+Generate VAPID keys:
+```bash
+npx web-push generate-vapid-keys
+```
+
+Set the 3 environment variables:
+```
+PUSH_PUBLIC_KEY=BN...        # From "Public Key" output
+PUSH_PRIVATE_KEY=...         # From "Private Key" output
+PUSH_SUBJECT=mailto:admin@yourdomain.com
+```
+
+## Optional: Backup & Export (V7 Next only)
+
+**Backup** is enabled by default — no configuration needed. The backup service runs hourly, stores snapshots in the `backups` MinIO bucket, and retains the last 84 snapshots (~3.5 days at hourly intervals). Backups are downloadable via the `/_backup/` endpoint.
+
+**Export** allows workspace data export as ZIP files (CSV/JSON) via the `/_export/` endpoint. Enabled by default.
+
+## Optional: PDF Digital Signatures (V7 Next only)
+
+The sign service provides PDF digital signature capabilities. A self-signed certificate is **auto-generated on first start** — no setup required.
+
+**Self-signed (default):** Works out of the box. PDF readers show an "untrusted signer" warning. Good for testing and internal use.
+
+**Production — AATL-compliant certificate (trusted by Adobe Acrobat):**
+
+1. Purchase a document signing certificate from an [AATL member CA](https://helpx.adobe.com/acrobat/kb/approved-trust-list1.html) (GlobalSign, DigiCert, Entrust, SSL.com — ~$200-300/year)
+2. Convert to PKCS#12 if needed:
+   ```bash
+   openssl pkcs12 -export -out certificate.p12 \
+     -inkey private.key -in signing-cert.pem -certfile chain.pem
+   ```
+3. Replace the auto-generated cert in the `sign_cert` Docker volume:
+   ```bash
+   docker volume inspect <project>_sign_cert | grep Mountpoint
+   sudo cp certificate.p12 <mountpoint>/certificate.p12
+   ```
+4. Set `SIGN_CERTIFICATE_PASSWORD` to the .p12 password
+5. Restart the sign service
+
 ### Speech-to-Text (STT) for Meeting Transcription (V7 Next only)
 
 Huly can transcribe meeting audio in real-time. The **love-agent** service (official `hardcoreeng/love-agent` image) captures audio from LiveKit rooms and sends transcriptions to the **aibot**, which saves them as Meeting Minutes.
@@ -548,17 +597,18 @@ blueprints/huly-v7/                # Dokploy: haiodo/* v0.7.315 on PostgreSQL (l
   huly.svg                         # Logo for Dokploy UI
 blueprints/huly-v7-next/           # Dokploy: hardcoreeng/* v0.7.353 on CockroachDB
   template.toml                    # Dokploy template (env vars, mounts, domains)
-  docker-compose.yml               # 35 services orchestration
+  docker-compose.yml               # 40 services orchestration
   huly.svg                         # Logo for Dokploy UI
 coolify/
   huly-v7-next/                    # Coolify / Docker Compose: standard deployment
-    docker-compose.yml             # Self-contained compose, 35 services
+    docker-compose.yml             # Self-contained compose, 40 services
     .env.example                   # Documented env template
     volumes/                       # Config files (extracted from template.toml)
       nginx/                       # Nginx reverse proxy config + entrypoint
       livekit/                     # LiveKit config + entrypoint
       love-agent/                  # Meeting transcription entrypoint
       cockroach-jobs/              # Meeting-minutes counter reconciliation
+      sign/                        # PDF signing cert auto-generation
   huly.yaml                        # Coolify upstream template (single file, future PR)
 ```
 

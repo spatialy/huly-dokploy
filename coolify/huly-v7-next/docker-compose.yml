@@ -170,6 +170,7 @@ services:
       - QUEUE_CONFIG=redpanda:9092
       - MAIL_URL=http://mail:8097
       - AI_BOT_URL=http://aibot:4010
+      - WEB_PUSH_URL=http://notification:8091
     restart: unless-stopped
 
   collaborator:
@@ -252,6 +253,10 @@ services:
       - LIVEKIT_WS=wss://${HOST_ADDRESS}/livekit
       - LINK_PREVIEW_URL=http://link-preview:4041
       - AI_URL=https://${HOST_ADDRESS}/_ai
+      - PUSH_PUBLIC_KEY=${PUSH_PUBLIC_KEY:-}
+      - BACKUP_URL=https://${HOST_ADDRESS}/_backup/api/backup
+      - EXPORT_URL=https://${HOST_ADDRESS}/_export
+      - SIGN_URL=https://${HOST_ADDRESS}/_sign
     restart: unless-stopped
 
   datalake:
@@ -518,6 +523,86 @@ services:
       - ./volumes/love-agent/entrypoint.sh:/entrypoint.sh
     restart: unless-stopped
 
+  notification:
+    image: hardcoreeng/notification:${HULY_VERSION:-v0.7.353}
+    environment:
+      - PORT=8091
+      - SOURCE=notification
+      - PUSH_PUBLIC_KEY=${PUSH_PUBLIC_KEY:-}
+      - PUSH_PRIVATE_KEY=${PUSH_PRIVATE_KEY:-}
+      - PUSH_SUBJECT=${PUSH_SUBJECT:-mailto:noreply@example.com}
+    restart: unless-stopped
+
+  backup:
+    image: hardcoreeng/backup:${HULY_VERSION:-v0.7.353}
+    depends_on:
+      - cockroach
+      - minio
+      - account
+    environment:
+      - SECRET=${SECRET}
+      - ACCOUNTS_URL=http://account:3000
+      - ACCOUNTS_DB_URL=${CR_DB_URL}
+      - DB_URL=${CR_DB_URL}
+      - STORAGE=minio|minio?accessKey=minioadmin&secretKey=minioadmin
+      - WORKSPACE_STORAGE=minio|minio?accessKey=minioadmin&secretKey=minioadmin
+      - BUCKET_NAME=backups
+      - INTERVAL=3600
+      - TIMEOUT=3600
+      - COOL_DOWN=300
+      - PARALLEL=1
+      - KEEP_SNAPSHOTS=84
+      - QUEUE_CONFIG=redpanda:9092
+    restart: unless-stopped
+
+  backup-api:
+    image: hardcoreeng/backup-api:${HULY_VERSION:-v0.7.353}
+    depends_on:
+      - minio
+      - account
+    environment:
+      - PORT=4039
+      - SECRET=${SECRET}
+      - ACCOUNTS_URL=http://account:3000
+      - BUCKET_NAME=backups
+      - STORAGE=minio|minio?accessKey=minioadmin&secretKey=minioadmin
+    restart: unless-stopped
+
+  export:
+    image: hardcoreeng/export:${HULY_VERSION:-v0.7.353}
+    depends_on:
+      - cockroach
+      - account
+    environment:
+      - PORT=4009
+      - SECRET=${SECRET}
+      - SERVICE_ID=export-service
+      - DB_URL=${CR_DB_URL}
+      - STORAGE_CONFIG=${STORAGE_CONFIG}
+      - ACCOUNTS_URL=http://account:3000
+      - STATS_URL=http://stats:4900
+    restart: unless-stopped
+
+  sign:
+    image: hardcoreeng/sign:${HULY_VERSION:-v0.7.353}
+    entrypoint: ["/bin/sh", "/entrypoint.sh"]
+    depends_on:
+      - account
+      - minio
+    environment:
+      - PORT=4006
+      - SECRET=${SECRET}
+      - SERVICE_ID=sign-service
+      - ACCOUNTS_URL=http://account:3000
+      - CERTIFICATE_PATH=/var/cfg/certificate.p12
+      - CERTIFICATE_PASSWORD=${SIGN_CERTIFICATE_PASSWORD:-password}
+      - STORAGE_CONFIG=${STORAGE_CONFIG}
+      - QUEUE_CONFIG=redpanda:9092
+    volumes:
+      - sign_cert:/var/cfg
+      - ./volumes/sign/entrypoint.sh:/entrypoint.sh
+    restart: unless-stopped
+
 volumes:
   cr_data:
   cr_certs:
@@ -525,3 +610,4 @@ volumes:
   files:
   mongo_data:
   redpanda:
+  sign_cert:

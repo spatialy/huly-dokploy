@@ -22,11 +22,11 @@ blueprints/huly-v7/                    # Dokploy: haiodo/* v0.7.315 (legacy)
   huly.svg                             # Logo for Dokploy UI
 blueprints/huly-v7-next/               # Dokploy: hardcoreeng/* v0.7.353
   template.toml                        # Same structure, official upstream images
-  docker-compose.yml                   # 35 services (CockroachDB, kvs, calendar, gmail, telegram, love-agent, cockroach-jobs)
+  docker-compose.yml                   # 40 services (CockroachDB, kvs, calendar, gmail, telegram, love-agent, backup, export, notification, sign, cockroach-jobs)
   huly.svg                             # Logo for Dokploy UI
 coolify/
   huly-v7-next/                        # Coolify / Docker Compose: standard deployment
-    docker-compose.yml                 # Self-contained compose (same 35 services, ./volumes/ paths)
+    docker-compose.yml                 # Self-contained compose (same 40 services, ./volumes/ paths)
     .env.example                       # Documented env template with secret generation commands
     volumes/                           # Config files extracted from template.toml inline mounts
       nginx/entrypoint.sh              # Parent-domain calc + sed replacement
@@ -35,6 +35,7 @@ coolify/
       livekit/livekit.yaml             # LiveKit config template
       love-agent/entrypoint.sh         # JWT generation + exec node index.js start
       cockroach-jobs/reconcile.sh      # Meeting-minutes counter reconciliation
+      sign/entrypoint.sh               # Auto-generates self-signed PKCS#12 cert
   huly.yaml                            # Coolify upstream template (single file, SERVICE_* magic vars)
 ```
 
@@ -57,7 +58,7 @@ All traffic enters through **nginx:80**, which routes by URL path prefix:
 | **Proxy** | nginx (routes `/_<name>` and `/livekit/` paths to backends) |
 | **Infrastructure** | cockroachdb:26257 (huly-v7-next) / postgres:5432 (huly-v7), redis:8.0, redpanda:v25.2.11 (Kafka), minio (S3), elastic:7.14.2, mongo:27017, livekit (WebRTC) |
 | **Core** | account:3000, transactor:3333, front:8080, workspace, collaborator:3078, fulltext:4700, kvs:8094 |
-| **Feature** | love:8097 (video), love-agent (transcription), aibot:4010 (AI), stats:4900, hulypulse:8098, stream:1081, media, preview:4043, datalake:4031, rekoni:4004, print:4005, github:3500, mail:8097, rating, process-service, link-preview:4041 |
+| **Feature** | love:8097 (video), love-agent (transcription), aibot:4010 (AI), stats:4900, hulypulse:8098, stream:1081, media, preview:4043, datalake:4031, rekoni:4004, print:4005, github:3500, mail:8097, rating, process-service, link-preview:4041, notification:8091 (push), backup (scheduler), backup-api:4039 (download), export:4009, sign:4006 (PDF) |
 | **Integrations** | calendar:8095 (Google Calendar), gmail:8087 (Gmail), telegram-bot:8086 (Telegram) |
 | **Maintenance** | cockroach-jobs (meeting-minutes counter reconciliation) |
 
@@ -67,7 +68,7 @@ All traffic enters through **nginx:80**, which routes by URL path prefix:
 
 **huly-v7 (legacy)** uses **PostgreSQL** via `haiodo/*` images from the intabia-fusion fork, which patched services to remove CockroachDB and MongoDB dependencies.
 
-The official [huly-selfhost](https://github.com/hcengineering/huly-selfhost) runs ~14 services on CockroachDB. Our `huly-v7-next` runs **35 services** — the extra services (datalake, love, livekit, kvs, calendar, gmail, telegram, love-agent, aibot, rating, hulypulse, stream, media, preview, rekoni, print, github, mail, process-service, link-preview, mongo, cockroach-jobs) are cloud/enterprise features not included in the official self-hosting guide.
+The official [huly-selfhost](https://github.com/hcengineering/huly-selfhost) runs ~14 services on CockroachDB. Our `huly-v7-next` runs **40 services** — the extra services (datalake, love, livekit, kvs, calendar, gmail, telegram, love-agent, aibot, rating, hulypulse, stream, media, preview, rekoni, print, github, mail, process-service, link-preview, mongo, cockroach-jobs) are cloud/enterprise features not included in the official self-hosting guide.
 
 ### LiveKit Integration
 
@@ -119,6 +120,8 @@ These feed into `[config] env` which becomes the `.env` for docker-compose. The 
 - `GOOGLE_CREDENTIALS` — Google OAuth credentials JSON for Calendar/Gmail integration
 - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` — Telegram bot integration (get token from @BotFather)
 - `GITHUB_APPID`, `GITHUB_CLIENTID`, `GITHUB_CLIENT_SECRET`, `GITHUB_PRIVATE_KEY`, `GITHUB_BOT_NAME` — GitHub integration
+- `PUSH_PUBLIC_KEY`, `PUSH_PRIVATE_KEY`, `PUSH_SUBJECT` — Web Push notifications via VAPID (generate keys with `npx web-push generate-vapid-keys`)
+- `SIGN_CERTIFICATE_PASSWORD` — password for the PDF signing PKCS#12 certificate (default: `password` for auto-generated self-signed cert)
 - `PLATFORM_ADMIN_EMAILS` — admin user emails
 - `TITLE`, `DEFAULT_LANGUAGE`, `LAST_NAME_FIRST` — UI customization
 
@@ -175,8 +178,6 @@ These services are excluded from the huly-v7-next blueprint:
 | Service | Reason | Impact |
 |---------|--------|--------|
 | **billing** | Cloud-only feature. Not in official self-hosting. Services gracefully skip when `BillingUrl` is empty. | No usage tracking UI. All features still work. |
-| **backup, export** | Straightforward to add. Planned for next phase. | No backup/export functionality yet. |
-| **notification** | Requires push notification keys. | No push notifications. |
 | **worker** | Requires Temporal.io infrastructure. Too heavy for self-hosting. | Deferred indefinitely. |
 
 ### cockroach-jobs (meeting-minutes counter reconciliation)

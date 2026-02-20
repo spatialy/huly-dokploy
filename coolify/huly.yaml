@@ -888,17 +888,16 @@ services:
           echo "CockroachDB is ready. Running reconciliation every $${INTERVAL}s."
 
           while true; do
-            psql "$$CR_DB_URL" -c "
-              UPDATE love
-              SET data = jsonb_set(COALESCE(data, '{}'::jsonb), '{meetings}', (
-                  SELECT COALESCE(to_jsonb(count(*)), '0'::jsonb)
-                  FROM meeting_minutes
-                  WHERE \"attachedTo\" = love._id
-                  AND \"workspaceId\" = love.\"workspaceId\"
-              )::jsonb)
-              WHERE _class IN ('love:class:Room', 'love:class:Office');
-            " && echo "[$$(date -Iseconds)] Reconciled meeting-minutes counters" \
-              || echo "[$$(date -Iseconds)] Reconciliation failed"
+            psql "$$CR_DB_URL" <<'EOSQL' && echo "[$$(date -Iseconds)] Reconciled meeting-minutes counters" || echo "[$$(date -Iseconds)] Reconciliation failed"
+          UPDATE love
+          SET data = jsonb_set(COALESCE(data, '{}'::jsonb), '{meetings}', (
+              SELECT COALESCE(to_jsonb(count(*)), '0'::jsonb)
+              FROM meeting_minutes
+              WHERE "attachedTo" = love._id
+              AND "workspaceId" = love."workspaceId"
+          )::jsonb)
+          WHERE _class IN ('love:class:Room', 'love:class:Office');
+          EOSQL
             sleep "$$INTERVAL"
           done
         is_directory: false

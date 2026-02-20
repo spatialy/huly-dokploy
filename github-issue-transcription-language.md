@@ -20,7 +20,22 @@ The `RoomLanguageSelector` component is **fully built and functional** — suppo
 
 This means:
 - **OpenAI STT** always receives `language: "en"`, producing garbled output and low confidence scores (~30%) for non-English speakers
-- **Deepgram STT** is unaffected (hardcoded to `language: "multi"` auto-detect, ignores the room language)
+- **Deepgram STT** is unaffected (hardcoded to `language: "multi"` auto-detect, ignores the room language entirely)
+
+### Provider-specific language behavior
+
+Even if the UI selector were enabled today, it would **only affect OpenAI STT**. Deepgram's implementation intentionally ignores the room language:
+
+| Behavior | OpenAI STT | Deepgram STT |
+|----------|-----------|--------------|
+| **Language default** | `"en"` (stored on instance) | N/A — hardcoded `"multi"` in `getOptions()` |
+| **`updateLanguage()` behavior** | Stores new language, sends live `transcription_session.update` to all active WebSocket connections (gated by `OPENAI_PROVIDE_LANGUAGE`) | **No-op** — method body is entirely commented out |
+| **Language sent to API** | `this.language` (dynamic, from room metadata) or `undefined` if `OPENAI_PROVIDE_LANGUAGE=false` | Always `"multi"` (hardcoded), regardless of room setting |
+| **`OPENAI_PROVIDE_LANGUAGE` effect** | Controls whether language hint is included in initial session and live updates | No effect whatsoever |
+| **Auto-detection** | Only when language is omitted (`OPENAI_PROVIDE_LANGUAGE=false`) | Always — Nova-3 `"multi"` mode handles multilingual automatically |
+| **Mid-meeting language change** | Works — sends `transcription_session.update` in real-time | Would require connection restart (code exists but is commented out) |
+
+The Deepgram `updateLanguage()` originally had a stop/restart implementation to reconnect with the new language, but it was commented out — likely because Nova-3's `"multi"` mode already handles multilingual meetings well without explicit hints.
 
 ### The infrastructure is complete
 
@@ -69,7 +84,8 @@ Self-hosted users deploying with OpenAI STT in non-English environments get:
 
 1. **Uncomment** the language selector in `RoomTranscriptionSettings.svelte`
 2. **Add** a language picker to `AddRoomPopup.svelte` (default to browser locale or `'en'`)
-3. (Optional) Also uncomment the `updateLanguage()` implementation in `deepgram/stt.ts` so Deepgram users can override the `"multi"` auto-detect if needed
+3. **Uncomment** the `updateLanguage()` implementation in `deepgram/stt.ts` — this would allow Deepgram users to override `"multi"` auto-detect with a specific language when needed (e.g., single-language meetings where auto-detect is less accurate)
+4. (Optional) Consider making the language selector show a note indicating that Deepgram always auto-detects, so users understand the selector primarily affects OpenAI STT
 
 ### Workarounds
 

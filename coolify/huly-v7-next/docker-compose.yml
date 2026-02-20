@@ -518,6 +518,7 @@ services:
       - STT_PROVIDER=${STT_PROVIDER:-deepgram}
       - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_PROVIDE_LANGUAGE=${OPENAI_PROVIDE_LANGUAGE:-true}
       - DEBUG=${LOVE_AGENT_DEBUG:-false}
     volumes:
       - ./volumes/love-agent/entrypoint.sh:/entrypoint.sh

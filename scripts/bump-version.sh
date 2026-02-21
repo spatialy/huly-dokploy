@@ -1,107 +1,152 @@
 #!/bin/bash
-# Bump template version and/or Huly upstream version.
+# Bump template version and/or Huly upstream version for active blueprints.
+# The legacy huly-v7 blueprint is left as-is (manage manually if needed).
 #
 # Usage:
-#   ./scripts/bump-version.sh patch               # v1.1.0 -> v1.1.1
-#   ./scripts/bump-version.sh minor               # v1.1.0 -> v1.2.0
-#   ./scripts/bump-version.sh major               # v1.1.0 -> v2.0.0
-#   ./scripts/bump-version.sh huly v0.7.320       # Update Huly images + auto patch bump
+#   ./scripts/bump-version.sh patch               # Bump BOTH v7-next + v7-pg patch
+#   ./scripts/bump-version.sh minor               # Bump BOTH minor
+#   ./scripts/bump-version.sh major               # Bump BOTH major
+#   ./scripts/bump-version.sh next [patch]         # Bump only v7-next (default: patch)
+#   ./scripts/bump-version.sh pg [patch]           # Bump only v7-pg (default: patch)
+#   ./scripts/bump-version.sh huly v0.7.360        # Update Huly images in BOTH + auto patch
+#   ./scripts/bump-version.sh status               # Show current versions
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-TOML="blueprints/huly-v7/template.toml"
+TOML_NEXT="blueprints/huly-v7-next/template.toml"
+TOML_PG="blueprints/huly-v7-pg/template.toml"
+ENV_NEXT="coolify/huly-v7-next/.env.example"
+ENV_PG="coolify/huly-v7-pg/.env.example"
+COOLIFY_YAML="coolify/huly.yaml"
 
-# Read current versions
-CURRENT_TPL=$(cat VERSION | tr -d '[:space:]')
-CURRENT_HULY=$(grep -o 'HULY_VERSION=v[0-9.]*' "$TOML" | head -1 | cut -d= -f2)
+# --- Helpers ---
 
-sync_huly_to_description() {
-  local huly_ver="$1"
-  # Update the (Huly vX.Y.Z) portion in meta.json description
-  sed -i '' "s/(Huly v[0-9.]*)/(Huly ${huly_ver})/" meta.json
+get_version() { grep -o 'TEMPLATE_VERSION=v[0-9.]*' "$1" | head -1 | sed 's/TEMPLATE_VERSION=v//'; }
+get_huly()    { grep -o 'HULY_VERSION=v[0-9.]*' "$1" | head -1 | cut -d= -f2; }
+
+bump_semver() {
+  local current="$1" part="$2"
+  IFS='.' read -r M m p <<< "$current"
+  case "$part" in
+    major) M=$((M + 1)); m=0; p=0 ;;
+    minor) m=$((m + 1)); p=0 ;;
+    patch) p=$((p + 1)) ;;
+  esac
+  echo "${M}.${m}.${p}"
 }
+
+# Update meta.json: set version badge and sync Huly version in description
+update_meta() {
+  local id="$1" new_ver="$2" huly_ver="$3"
+  python3 -c "
+import json, re
+with open('meta.json') as f:
+    data = json.load(f)
+for e in data:
+    if e['id'] == '${id}':
+        e['version'] = 'v${new_ver}'
+        e['description'] = re.sub(r'\(Huly v[0-9.]+', '(Huly ${huly_ver}', e['description'])
+with open('meta.json', 'w') as f:
+    json.dump(data, f, indent=4)
+    f.write('\n')
+"
+}
+
+# --- Core operations ---
 
 bump_template() {
-  local PART="$1"
-  IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_TPL"
+  local toml="$1" part="$2" id="$3"
+  local old new huly
+  old=$(get_version "$toml")
+  new=$(bump_semver "$old" "$part")
+  huly=$(get_huly "$toml")
 
-  case "$PART" in
-    major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
-    minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
-    patch) PATCH=$((PATCH + 1)) ;;
-  esac
+  sed -i '' "s/TEMPLATE_VERSION=v${old}/TEMPLATE_VERSION=v${new}/" "$toml"
+  update_meta "$id" "$new" "$huly"
 
-  local NEW="${MAJOR}.${MINOR}.${PATCH}"
-  echo "Template version: v${CURRENT_TPL} -> v${NEW}"
-
-  # VERSION file
-  printf '%s\n' "$NEW" > VERSION
-
-  # meta.json version badge
-  sed -i '' "s/\"version\": \"v${CURRENT_TPL}\"/\"version\": \"v${NEW}\"/" meta.json
-
-  # template.toml TEMPLATE_VERSION env var
-  sed -i '' "s/TEMPLATE_VERSION=v${CURRENT_TPL}/TEMPLATE_VERSION=v${NEW}/" "$TOML"
-
-  # Always sync current Huly version into meta.json description
-  local huly_ver
-  huly_ver=$(grep -o 'HULY_VERSION=v[0-9.]*' "$TOML" | head -1 | cut -d= -f2)
-  sync_huly_to_description "$huly_ver"
-
-  echo "  VERSION              -> ${NEW}"
-  echo "  meta.json            -> v${NEW} (Huly ${huly_ver})"
-  echo "  template.toml        -> TEMPLATE_VERSION=v${NEW}"
+  echo "  ${id}: v${old} -> v${new} (Huly ${huly})"
 }
 
-bump_huly() {
-  local NEW_HULY="$1"
-  # Validate format
-  if [[ ! "$NEW_HULY" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo "Error: Huly version must be vX.Y.Z (e.g., v0.7.320)"
-    exit 1
-  fi
+bump_huly_in() {
+  local file="$1" new_huly="$2"
+  local old_huly
+  old_huly=$(get_huly "$file")
+  sed -i '' "s/HULY_VERSION=${old_huly}/HULY_VERSION=${new_huly}/g" "$file"
+}
 
-  echo "Huly upstream: ${CURRENT_HULY} -> ${NEW_HULY}"
+# Update HULY_VERSION defaults in Coolify yaml (${HULY_VERSION:-vX.Y.Z} pattern)
+bump_huly_coolify_yaml() {
+  local new_huly="$1"
+  sed -i '' "s/HULY_VERSION:-v[0-9.]*}/HULY_VERSION:-${new_huly}}/g" "$COOLIFY_YAML"
+}
 
-  # template.toml HULY_VERSION env var
-  sed -i '' "s/HULY_VERSION=${CURRENT_HULY}/HULY_VERSION=${NEW_HULY}/" "$TOML"
-
-  # meta.json description
-  sync_huly_to_description "$NEW_HULY"
-
-  echo "  template.toml        -> HULY_VERSION=${NEW_HULY}"
-  echo "  meta.json            -> description updated"
+show_status() {
+  echo "Current versions:"
+  echo "  huly-v7-next:  v$(get_version "$TOML_NEXT")  (Huly $(get_huly "$TOML_NEXT"))"
+  echo "  huly-v7-pg:    v$(get_version "$TOML_PG")  (Huly $(get_huly "$TOML_PG"))"
   echo ""
-
-  # Auto-bump template patch version
-  bump_template patch
+  echo "Legacy (not managed by this script):"
+  echo "  huly-v7:       v$(get_version blueprints/huly-v7/template.toml)  (Huly $(get_huly blueprints/huly-v7/template.toml))"
 }
 
-case "${1:-patch}" in
-  major|minor|patch)
-    bump_template "$1"
+# --- Main ---
+
+case "${1:-status}" in
+  next)
+    echo "Bumping huly-v7-next template version..."
+    bump_template "$TOML_NEXT" "${2:-patch}" "huly-v7-next"
+    ;;
+  pg)
+    echo "Bumping huly-v7-pg template version..."
+    bump_template "$TOML_PG" "${2:-patch}" "huly-v7-pg"
+    ;;
+  patch|minor|major)
+    echo "Bumping both template versions ($1)..."
+    bump_template "$TOML_NEXT" "$1" "huly-v7-next"
+    bump_template "$TOML_PG" "$1" "huly-v7-pg"
     ;;
   huly)
     if [ -z "${2:-}" ]; then
       echo "Usage: $0 huly <version>"
-      echo "Example: $0 huly v0.7.320"
+      echo "Example: $0 huly v0.7.360"
       exit 1
     fi
-    bump_huly "$2"
+    NEW_HULY="$2"
+    if [[ ! "$NEW_HULY" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+      echo "Error: Huly version must be vX.Y.Z (e.g., v0.7.360)"
+      exit 1
+    fi
+
+    echo "Updating Huly upstream to ${NEW_HULY}..."
+    bump_huly_in "$TOML_NEXT" "$NEW_HULY"
+    bump_huly_in "$TOML_PG" "$NEW_HULY"
+    bump_huly_in "$ENV_NEXT" "$NEW_HULY"
+    bump_huly_in "$ENV_PG" "$NEW_HULY"
+    bump_huly_coolify_yaml "$NEW_HULY"
+    echo "  HULY_VERSION -> ${NEW_HULY} (blueprints + coolify)"
+    echo ""
+    echo "Auto-bumping template patch versions..."
+    bump_template "$TOML_NEXT" "patch" "huly-v7-next"
+    bump_template "$TOML_PG" "patch" "huly-v7-pg"
+    ;;
+  status|"")
+    show_status
+    exit 0
     ;;
   *)
-    echo "Usage: $0 [major|minor|patch|huly <vX.Y.Z>]"
+    echo "Usage: $0 [next|pg|patch|minor|major|huly <vX.Y.Z>|status]"
     echo ""
     echo "Commands:"
-    echo "  patch              Bump template patch version (default)"
-    echo "  minor              Bump template minor version"
-    echo "  major              Bump template major version"
-    echo "  huly v0.7.320      Update Huly upstream images + auto patch bump"
+    echo "  patch              Bump both v7-next + v7-pg patch version (default)"
+    echo "  minor              Bump both minor versions"
+    echo "  major              Bump both major versions"
+    echo "  next [patch]       Bump only v7-next (default: patch)"
+    echo "  pg [patch]         Bump only v7-pg (default: patch)"
+    echo "  huly v0.7.360      Update Huly upstream images in both + auto patch"
+    echo "  status             Show current versions"
     echo ""
-    echo "Current versions:"
-    echo "  Template:  v${CURRENT_TPL}"
-    echo "  Huly:      ${CURRENT_HULY}"
+    show_status
     exit 1
     ;;
 esac

@@ -1,38 +1,40 @@
 #!/bin/bash
 # Pre-commit hook: auto-bumps template patch version when blueprint files change.
-# Skips if VERSION/meta.json/TEMPLATE_VERSION are already staged (manual bump).
+# Detects which blueprint(s) changed and bumps only those.
+# Skips if meta.json is already staged (manual bump via bump-version.sh).
 #
 # Install: ./scripts/install-hooks.sh
 
 set -euo pipefail
 
-# Files that trigger an auto-bump
-WATCHED_FILES=(
-  "blueprints/huly-v7/template.toml"
-  "blueprints/huly-v7/docker-compose.yml"
-)
+TOML_NEXT="blueprints/huly-v7-next/template.toml"
+TOML_PG="blueprints/huly-v7-pg/template.toml"
 
-# Skip if the bump script itself already staged version files (manual bump)
+# Skip if meta.json already staged (manual bump)
 STAGED=$(git diff --cached --name-only)
-if echo "$STAGED" | grep -q '^VERSION$'; then
+if echo "$STAGED" | grep -q '^meta.json$'; then
   exit 0
 fi
 
-# Check if any watched file is in the staged changes
-NEEDS_BUMP=false
-for f in "${WATCHED_FILES[@]}"; do
-  if echo "$STAGED" | grep -qF "$f"; then
-    NEEDS_BUMP=true
-    break
-  fi
-done
+# Detect which blueprints have staged changes
+BUMP_NEXT=false
+BUMP_PG=false
 
-if [ "$NEEDS_BUMP" = false ]; then
-  exit 0
+if echo "$STAGED" | grep -q '^blueprints/huly-v7-next/'; then BUMP_NEXT=true; fi
+if echo "$STAGED" | grep -q '^blueprints/huly-v7-pg/'; then BUMP_PG=true; fi
+if echo "$STAGED" | grep -q '^coolify/huly-v7-next/'; then BUMP_NEXT=true; fi
+if echo "$STAGED" | grep -q '^coolify/huly-v7-pg/'; then BUMP_PG=true; fi
+
+if [ "$BUMP_NEXT" = true ] && [ "$BUMP_PG" = true ]; then
+  echo "[pre-commit] Both blueprints changed — auto-bumping both..."
+  ./scripts/bump-version.sh patch
+  git add meta.json "$TOML_NEXT" "$TOML_PG"
+elif [ "$BUMP_NEXT" = true ]; then
+  echo "[pre-commit] huly-v7-next changed — auto-bumping..."
+  ./scripts/bump-version.sh next patch
+  git add meta.json "$TOML_NEXT"
+elif [ "$BUMP_PG" = true ]; then
+  echo "[pre-commit] huly-v7-pg changed — auto-bumping..."
+  ./scripts/bump-version.sh pg patch
+  git add meta.json "$TOML_PG"
 fi
-
-echo "[pre-commit] Blueprint files changed — auto-bumping template patch version..."
-./scripts/bump-version.sh patch
-
-# Stage the version files that bump-version.sh modified
-git add VERSION meta.json blueprints/huly-v7/template.toml

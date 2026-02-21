@@ -1,6 +1,17 @@
 # Changelog
 
-All notable changes to this project are documented here. This project maintains two independent blueprints (`huly-v7` and `huly-v7-next`) with separate version tracks.
+All notable changes to this project are documented here. This project maintains three blueprints (`huly-v7`, `huly-v7-next`, `huly-v7-pg`) with separate version tracks.
+
+## huly-v7-pg
+
+### v3.2.0 (2026-02-20)
+- **add**: New PostgreSQL blueprint variant — same 40 services as `huly-v7-next` but replaces CockroachDB with PostgreSQL 17 (`postgres:17-alpine`). Saves ~1-1.5GB RAM at idle.
+- **add**: KVS compatibility via `CREATE DOMAIN bytes AS bytea;` in PostgreSQL init script — no custom images needed.
+- **add**: Account service flag `PROCEED_V7_MONGO=false` to skip MongoDB migration path.
+- **add**: `pg-jobs` sidecar (same meeting-minutes counter reconciliation as `cockroach-jobs`, using `PG_DB_URL`).
+- **add**: Coolify / Docker Compose variant at `coolify/huly-v7-pg/` with `.env.example` and extracted config files.
+- Env vars renamed: `CR_DATABASE/CR_USERNAME/CR_PASSWORD/CR_DB_URL` → `PG_DATABASE/PG_USERNAME/PG_PASSWORD/PG_DB_URL`.
+- Based on upstream PostgreSQL support (PR #10331, Dec 2025) included in v0.7.353.
 
 ## huly-v7-next
 
@@ -79,3 +90,11 @@ All notable changes to this project are documented here. This project maintains 
 - Added AI assistant (OpenAI) configuration.
 - Added GitHub integration support.
 - Added STT configuration for meeting transcription.
+
+## Tooling
+
+### 2026-02-20
+- **change**: Rewrite `scripts/bump-version.sh` to manage `huly-v7-next` and `huly-v7-pg` (legacy `huly-v7` left as-is). New subcommands: `next`, `pg`, `patch`/`minor`/`major`, `huly`, `status`.
+- **change**: `huly` subcommand now updates 6 files: both `template.toml`, both Coolify `.env.example`, `coolify/huly.yaml` inline defaults, and `meta.json`.
+- **change**: Rewrite `scripts/pre-commit` hook to detect which blueprint(s) changed and bump only those.
+- **remove**: Root `VERSION` file — each blueprint's version now lives in its own `template.toml`.

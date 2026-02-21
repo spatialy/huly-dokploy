@@ -36,5 +36,24 @@
             "team",
             "productivity"
         ]
+    },
+    {
+        "id": "huly-v7-pg",
+        "name": "Huly V7 PG (by spatialy)",
+        "version": "v3.2.0",
+        "description": "All-in-one project management (Huly v0.7.353, 40 services on PostgreSQL). Lighter than CockroachDB (~1.5GB less RAM). Session persistence fix, LiveKit video, AI assistant, backup, export, push notifications, PDF signing, Calendar/Gmail/Telegram integrations.",
+        "logo": "huly.svg",
+        "links": {
+            "github": "https://github.com/hcengineering/huly",
+            "website": "https://huly.io/",
+            "docs": "https://huly.io/docs/self-hosting"
+        },
+        "tags": [
+            "project-management",
+            "collaboration",
+            "task-management",
+            "team",
+            "productivity"
+        ]
     }
 ]

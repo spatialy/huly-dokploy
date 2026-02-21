@@ -605,6 +605,13 @@ STT_PROVIDER=openai
 - This is a known upstream bug ([PR #10527](https://github.com/hcengineering/platform/pull/10527)). Meeting minutes are saved to the database but the UI counter is never incremented, so the UI shows "No meeting minutes".
 - The `cockroach-jobs` (V7 Next) or `pg-jobs` (V7 PG) sidecar automatically reconciles these counters every 5 minutes (configurable via `RECONCILE_INTERVAL`). After one cycle, meeting minutes will appear in the UI.
 
+### KVS crash-loop on V7 PG (PostgreSQL)
+- **Expected behavior.** The `kvs` (hulykvs) service uses CockroachDB-specific SQL (`SET search_path TO $1`, `ALTER PRIMARY KEY USING COLUMNS`, duplicate `ON CONFLICT` columns) that PostgreSQL rejects. It will crash-loop until [hulykvs PR #5](https://github.com/hcengineering/hulykvs/pull/5) is merged and a new image is published.
+- **Impact is minimal.** KVS is only used by the **Google Calendar** and **Gmail** integrations to store sync cursor state (history IDs, page tokens). All core Huly features — issues, documents, chat, video calls, AI, search, meeting transcription — work perfectly without it.
+- **If you don't use Google Calendar or Gmail integration**, KVS being down has zero user-facing impact.
+- **If you do use Calendar/Gmail**, incremental sync won't work (can't track where it left off). Already-synced data is unaffected.
+- The V7 Next (CockroachDB) blueprint is not affected — kvs works natively on CockroachDB.
+
 ### 502 Bad Gateway
 - Wait a few seconds and refresh -- services take time to start
 - PostgreSQL / CockroachDB may need up to 30 seconds to initialize on first deploy

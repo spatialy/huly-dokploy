@@ -6,7 +6,8 @@ All notable changes to this project are documented here. This project maintains 
 
 ### v3.2.0 (2026-02-20)
 - **add**: New PostgreSQL blueprint variant — same 40 services as `huly-v7-next` but replaces CockroachDB with PostgreSQL 17 (`postgres:17-alpine`). Saves ~1-1.5GB RAM at idle.
-- **add**: KVS compatibility via `CREATE DOMAIN bytes AS bytea;` in PostgreSQL init script — no custom images needed.
+- **add**: KVS DDL compatibility via `CREATE DOMAIN bytes AS bytea;` in PostgreSQL init script.
+- **known issue**: KVS (hulykvs) crash-loops on PostgreSQL due to additional CockroachDB-specific SQL beyond the DDL (`SET search_path TO $1`, `ALTER PRIMARY KEY USING COLUMNS`, duplicate `ON CONFLICT` columns). Only affects Google Calendar and Gmail integration sync state — all core features work. Waiting on [hulykvs PR #5](https://github.com/hcengineering/hulykvs/pull/5) for upstream fix.
 - **add**: Account service flag `PROCEED_V7_MONGO=false` to skip MongoDB migration path.
 - **add**: `pg-jobs` sidecar (same meeting-minutes counter reconciliation as `cockroach-jobs`, using `PG_DB_URL`).
 - **add**: Coolify / Docker Compose variant at `coolify/huly-v7-pg/` with `.env.example` and extracted config files.

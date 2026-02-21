@@ -696,7 +696,8 @@ coolify/
 - **Original Huly**: https://github.com/hcengineering/huly
 - **PostgreSQL Fork**: https://github.com/intabia-fusion/foundation-selfhost -- This template uses the intabia-fusion fork of Huly that replaces CockroachDB with PostgreSQL, making self-hosting simpler and more resource-friendly. Docker images are published as `haiodo/*` on Docker Hub.
 - **Dokploy Template**: Created to help non-developers deploy Huly without headaches. If it helps you, give it a star!
+- **Developed by [Datalox Inc](https://datalox.co)**  — A Growth Engineering Consultancy based in Miami, FL. Built with a lot of Cuban Coladas ☕☕☕.
 
 ## License
 
-MIT - Use freely!
+Use freely!

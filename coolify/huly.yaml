@@ -593,6 +593,7 @@ services:
       - STATS_URL=http://stats:4900
       - QUEUE_CONFIG=redpanda:9092
       - ACCOUNTS_DB_URL=postgres://huly:${SERVICE_PASSWORD_COCKROACH}@cockroach:26257/huly
+      - INIT_WORKSPACE=${INIT_WORKSPACE:-none}
     restart: unless-stopped
 
   front:

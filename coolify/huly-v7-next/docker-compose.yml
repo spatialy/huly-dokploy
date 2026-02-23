@@ -218,6 +218,7 @@ services:
       - STATS_URL=http://stats:4900
       - QUEUE_CONFIG=redpanda:9092
       - ACCOUNTS_DB_URL=${CR_DB_URL}
+      - INIT_WORKSPACE=${INIT_WORKSPACE:-none}
     restart: unless-stopped
 
   front:

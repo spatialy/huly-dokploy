@@ -4,6 +4,9 @@ All notable changes to this project are documented here. This project maintains 
 
 ## huly-v7-pg
 
+### v3.2.3 (2026-02-23)
+- **add**: `INIT_WORKSPACE=none` — new workspaces are now created empty (no sample projects/issues). Set to `huly` to restore demo content.
+
 ### v3.2.1 (2026-02-22)
 - **change**: Bump Huly upstream to v0.7.375.
 - **fix**: KVS now natively supports PostgreSQL — removed `CREATE DOMAIN bytes AS bytea;` init script workaround. [hulykvs PR #5](https://github.com/hcengineering/hulykvs/pull/5) merged upstream and shipped in v0.7.375. Google Calendar and Gmail sync state now works on PostgreSQL.
@@ -20,6 +23,9 @@ All notable changes to this project are documented here. This project maintains 
 - Based on upstream PostgreSQL support (PR #10331, Dec 2025) included in v0.7.353.
 
 ## huly-v7-next
+
+### v3.1.3 (2026-02-23)
+- **add**: `INIT_WORKSPACE=none` — new workspaces are now created empty (no sample projects/issues). Set to `huly` to restore demo content.
 
 ### v3.1.1 (2026-02-22)
 - **change**: Bump Huly upstream to v0.7.375.

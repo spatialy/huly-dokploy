@@ -275,6 +275,16 @@ DISABLE_SIGNUP=true
 
 After this, new users can only be invited by existing users through the Huly UI. The sign-up page will no longer be accessible.
 
+### Disable Sample Data
+
+By default, this template ships with `INIT_WORKSPACE=none`, so new workspaces are created **empty** (no demo projects, sample issues, or onboarding content). This gives you a clean slate.
+
+To restore the upstream default behavior (sample "Welcome to Huly!" project, "Game Design (Example)" project, Quick-Start Docs, etc.), set:
+
+```
+INIT_WORKSPACE=huly
+```
+
 ### Template Versioning
 
 This template tracks **two independent versions**:

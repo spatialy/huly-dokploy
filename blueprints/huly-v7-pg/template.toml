@@ -10,7 +10,7 @@ livekit_api_secret = "${base64:32}"
 env = [
   "HULY_VERSION=v0.7.375",
   "STATS_VERSION=s0.7.375",
-  "TEMPLATE_VERSION=v3.2.2",
+  "TEMPLATE_VERSION=v3.2.3",
   "DOCKER_NAME=huly_v7",
   "HOST_ADDRESS=${main_domain}",
   "SECRET=${huly_secret}",
@@ -26,6 +26,7 @@ env = [
   "REDPANDA_ADMIN_PWD=${redpanda_password}",
   "PLATFORM_ADMIN_EMAILS=",
   "DISABLE_SIGNUP=false",
+  "INIT_WORKSPACE=none",
   "# LiveKit Configuration (built-in - auto-generated keys)",
   "LIVEKIT_API_KEY=${livekit_api_key}",
   "LIVEKIT_API_SECRET=${livekit_api_secret}",

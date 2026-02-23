@@ -137,6 +137,7 @@ These feed into `[config] env` which becomes the `.env` for docker-compose. The 
 - `GITHUB_APPID`, `GITHUB_CLIENTID`, `GITHUB_CLIENT_SECRET`, `GITHUB_PRIVATE_KEY`, `GITHUB_BOT_NAME` — GitHub integration
 - `PUSH_PUBLIC_KEY`, `PUSH_PRIVATE_KEY`, `PUSH_SUBJECT` — Web Push notifications via VAPID (generate keys with `npx web-push generate-vapid-keys`)
 - `SIGN_CERTIFICATE_PASSWORD` — password for the PDF signing PKCS#12 certificate (default: `password` for auto-generated self-signed cert)
+- `DISABLE_SIGNUP` — set to `true` after first user creation to prevent public registrations. Must be on both `account` and `front` services (already wired in all compose files). Defaults to `false`.
 - `PLATFORM_ADMIN_EMAILS` — admin user emails
 - `TITLE`, `DEFAULT_LANGUAGE`, `LAST_NAME_FIRST` — UI customization
 

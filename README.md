@@ -37,6 +37,10 @@ Now you have a domain:
 
 ## Deploy with Dokploy
 
+Two options are available:
+
+### Option A: Deploy from Template
+
 1. In Dokploy, click create project, call it something like "Huly", and click create.
 Then click create service and select template.
 Go to **Templates** and add this repository in the Base URL field. URL: `https://raw.githubusercontent.com/spatialy/huly-dokploy/main`
@@ -55,6 +59,47 @@ Then click create.
 **Huly is now running!** Video calls (LiveKit) are built-in and work automatically -- API keys are auto-generated at deploy time.
 
 > **Important:** Huly v0.7.315 uses OTP (email code) as the default login method. You **must** configure SMTP for email delivery, otherwise users won't receive login codes. Password login is also available as a fallback (click "Sign in with password" on the login page).
+
+### Option B: Deploy from Git Repository
+
+Git-based deploys have a key advantage: Dokploy uses a **stable project name** tied to your service, so Docker volumes persist across rebuilds and redeploys. With templates, Delete + Redeploy generates a new project name and orphans your old data volumes. With Git deploys, you can safely rebuild without worrying about data loss.
+
+Upgrading is also simpler -- pull new commits from upstream and redeploy. Config files update automatically from the repo.
+
+> **Important:** Use the `coolify/` directory, NOT `blueprints/`. The `blueprints/` directory expects `../files/volumes/` paths that are only created by Dokploy's template processor.
+
+1. In Dokploy, create a project (e.g., "Huly") and create a **Docker Compose** service
+2. Set the source to **Git Repository** with URL: `https://github.com/spatialy/huly-dokploy`
+3. Set **Docker Compose Location** to `coolify/huly-v7-pg/docker-compose.yml` (PostgreSQL, recommended) or `coolify/huly-v7-next/docker-compose.yml` (CockroachDB)
+4. Go to **Environment** tab and set:
+   ```
+   HOST_ADDRESS=huly.example.com
+   ```
+5. Generate secrets (run these on your server and paste the values):
+   ```bash
+   # SECRET
+   openssl rand -base64 64 | tr -d '\n'
+   # PG_PASSWORD (or CR_PASSWORD for CockroachDB)
+   openssl rand -base64 24 | tr -d '/+=' | head -c 32
+   # REDPANDA_ADMIN_PWD
+   openssl rand -base64 24 | tr -d '/+=' | head -c 16
+   # LIVEKIT_API_KEY
+   openssl rand -base64 24 | tr -d '/+=' | head -c 16
+   # LIVEKIT_API_SECRET
+   openssl rand -base64 32 | tr -d '\n'
+   ```
+6. Set the database URL:
+   - PostgreSQL: `PG_DB_URL=postgres://huly:<your-PG_PASSWORD>@postgres:5432/huly`
+   - CockroachDB: `CR_DB_URL=postgres://huly:<your-CR_PASSWORD>@cockroach:26257/huly`
+7. Configure SMTP (see [Configure Email](#configure-email-required-for-otp-login) below)
+8. Go to **Domains** tab, set your domain and enable **HTTPS**
+9. Click **Deploy**
+
+See `coolify/huly-v7-pg/.env.example` for the full list of variables and documentation.
+
+**Volume safety:** All data (database, files, search index) uses Docker named volumes -- safe across redeploys. Config files in `./volumes/` are static templates tracked in Git and restored from the repo on every clone. No runtime data is stored in bind mounts.
+
+**Upgrading:** Pull new commits from upstream in Dokploy's Git settings (or let it auto-pull), then click **Redeploy**. Config files update from the repo automatically, data volumes persist.
 
 ### Configure Email (Required for OTP Login)
 
@@ -217,6 +262,18 @@ If you're using a cloud provider (AWS, Hetzner, DigitalOcean, etc.), make sure t
 - HTTPS must be enabled on your domain
 - Wait 1-2 minutes for DNS to propagate before deploying
 - If something doesn't work, try redeploying
+
+### Disable Sign-Up (Important)
+
+> **Your Huly instance is open to the public by default.** Anyone who knows your domain can create an account. After creating your first user account, you should disable public sign-ups immediately.
+
+Set `DISABLE_SIGNUP=true` in your environment variables and redeploy. This must be set on both the **account** and **front** services -- our compose files already wire this variable to both, so you only need to set it once in your env.
+
+```
+DISABLE_SIGNUP=true
+```
+
+After this, new users can only be invited by existing users through the Huly UI. The sign-up page will no longer be accessible.
 
 ### Template Versioning
 

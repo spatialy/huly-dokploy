@@ -101,6 +101,13 @@ All notable changes to this project are documented here. This project maintains 
 - Added GitHub integration support.
 - Added STT configuration for meeting transcription.
 
+## Docs
+
+### 2026-02-22
+- **docs**: Add "Deploy from Git Repository" option to Dokploy section in README. Documents how to deploy via Dokploy's Git source (using `coolify/huly-v7-pg/` directory), with step-by-step instructions, volume safety notes, and upgrade workflow. Git deploys use a stable project name, avoiding the volume orphaning risk of template-based Delete + Redeploy.
+- **docs**: Add "Disable Sign-Up" security note to Important Notes section. Explains that Huly instances are open to public registration by default and how to set `DISABLE_SIGNUP=true` after creating the first user.
+- **add**: Wire `DISABLE_SIGNUP` env var to `account` and `front` services in all blueprints, Coolify compose files, template.toml files, and `.env.example` files. Defaults to `false`.
+
 ## Research
 
 ### 2026-02-21

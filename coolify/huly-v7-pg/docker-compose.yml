@@ -195,6 +195,7 @@ services:
       - SERVER_PORT=3000
       - SERVER_SECRET=${SECRET}
       - ADMIN_EMAILS=${PLATFORM_ADMIN_EMAILS}
+      - DISABLE_SIGNUP=${DISABLE_SIGNUP:-false}
       - DB_URL=${PG_DB_URL}
       - PROCEED_V7_MONGO=false
       - TRANSACTOR_URL=ws://transactor:3333;wss://${HOST_ADDRESS}/_transactor
@@ -245,6 +246,7 @@ services:
       - TITLE=${TITLE:-Huly Self Host}
       - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-en}
       - LAST_NAME_FIRST=${LAST_NAME_FIRST:-true}
+      - DISABLE_SIGNUP=${DISABLE_SIGNUP:-false}
       - DESKTOP_UPDATES_CHANNEL=selfhost
       - PULSE_URL=wss://${HOST_ADDRESS}/_pulse
       - STREAM_URL=https://${HOST_ADDRESS}/_stream/recording

@@ -567,6 +567,7 @@ services:
       - SERVER_PORT=3000
       - SERVER_SECRET=${SERVICE_PASSWORD_SECRET}
       - ADMIN_EMAILS=${PLATFORM_ADMIN_EMAILS:-}
+      - DISABLE_SIGNUP=${DISABLE_SIGNUP:-false}
       - DB_URL=postgres://huly:${SERVICE_PASSWORD_COCKROACH}@cockroach:26257/huly
       - TRANSACTOR_URL=ws://transactor:3333;wss://${HOST_ADDRESS:-huly.example.com}/_transactor
       - STORAGE_CONFIG=datalake|http://datalake:4031
@@ -615,6 +616,7 @@ services:
       - TITLE=${TITLE:-Huly Self Host}
       - DEFAULT_LANGUAGE=${DEFAULT_LANGUAGE:-en}
       - LAST_NAME_FIRST=${LAST_NAME_FIRST:-true}
+      - DISABLE_SIGNUP=${DISABLE_SIGNUP:-false}
       - DESKTOP_UPDATES_CHANNEL=selfhost
       - PULSE_URL=wss://${HOST_ADDRESS:-huly.example.com}/_pulse
       - STREAM_URL=https://${HOST_ADDRESS:-huly.example.com}/_stream/recording

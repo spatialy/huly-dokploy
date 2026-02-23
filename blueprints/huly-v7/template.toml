@@ -24,6 +24,7 @@ env = [
   "REDPANDA_ADMIN_USER=admin",
   "REDPANDA_ADMIN_PWD=${redpanda_password}",
   "PLATFORM_ADMIN_EMAILS=",
+  "DISABLE_SIGNUP=false",
   "# LiveKit Configuration (built-in - auto-generated keys)",
   "LIVEKIT_API_KEY=${livekit_api_key}",
   "LIVEKIT_API_SECRET=${livekit_api_secret}",

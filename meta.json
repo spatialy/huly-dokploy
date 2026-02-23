@@ -21,7 +21,7 @@
     {
         "id": "huly-v7-next",
         "name": "Huly V7 Next (by spatialy)",
-        "version": "v3.1.1",
+        "version": "v3.1.2",
         "description": "All-in-one project management (Huly v0.7.375, 40 services on CockroachDB). Session persistence fix, LiveKit video, AI assistant, backup, export, push notifications, PDF signing, Calendar/Gmail/Telegram integrations.",
         "logo": "huly.svg",
         "links": {
@@ -40,7 +40,7 @@
     {
         "id": "huly-v7-pg",
         "name": "Huly V7 PG (by spatialy)",
-        "version": "v3.2.1",
+        "version": "v3.2.2",
         "description": "All-in-one project management (Huly v0.7.375, 40 services on PostgreSQL). Lighter than CockroachDB (~1.5GB less RAM). Session persistence fix, LiveKit video, AI assistant, backup, export, push notifications, PDF signing, Calendar/Gmail/Telegram integrations.",
         "logo": "huly.svg",
         "links": {

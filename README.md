@@ -225,7 +225,7 @@ This template tracks **two independent versions**:
 | Version | What | Example |
 |---------|------|---------|
 | **Template version** | Our blueprint changes (fixes, config improvements) | `v1.1.4` / `v3.1.0` / `v3.2.0` (shown as badge in Dokploy template picker) |
-| **Huly version** | Upstream Docker image tags | `v0.7.315` (huly-v7) / `v0.7.353` (huly-v7-next, huly-v7-pg) |
+| **Huly version** | Upstream Docker image tags | `v0.7.315` (huly-v7) / `v0.7.375` (huly-v7-next, huly-v7-pg) |
 
 **Dokploy bakes templates at deploy time.** Pushing updates to this repo does NOT update existing deployments. To check which version you deployed, look for `TEMPLATE_VERSION` in your Dokploy **Environment** tab.
 
@@ -295,7 +295,7 @@ Three blueprints are available:
 
 ### Huly V7 Next -- `hardcoreeng/*` images on CockroachDB
 
-40 services using official `hardcoreeng/*` Docker images on CockroachDB at v0.7.353.
+40 services using official `hardcoreeng/*` Docker images on CockroachDB at v0.7.375.
 
 <details>
 <summary>Service list</summary>
@@ -310,44 +310,44 @@ Three blueprints are available:
 | mongo | 7-jammy | MongoDB (for aibot, calendar, telegram) |
 | nginx | 1.21.3 | Reverse proxy with cookie fixes |
 | livekit | latest | WebRTC server for video calls |
-| account | v0.7.353 | Account management |
-| transactor | v0.7.353 | Data synchronization |
-| collaborator | v0.7.353 | Real-time collaboration |
-| front | v0.7.353 | Frontend |
-| workspace | v0.7.353 | Workspace management |
-| fulltext | v0.7.353 | Full-text search |
-| kvs | v0.7.353 | Key-value store (CockroachDB-backed) |
-| stats | v0.7.353 | Statistics |
-| rekoni | v0.7.353 | Document processing |
-| datalake | v0.7.353 | Data storage API |
-| hulypulse | v0.7.353 | Real-time updates |
-| stream | v0.7.353 | Media streaming |
-| preview | v0.7.353 | File previews |
-| media | v0.7.353 | Media processing |
-| love | v0.7.353 | Video calls service |
-| love-agent | v0.7.353 | Meeting transcription (via OpenAI or Deepgram STT) |
-| aibot | v0.7.353 | AI assistant |
-| rating | v0.7.353 | Rating service |
-| process-service | v0.7.353 | Background processing |
-| print | v0.7.353 | Print/export service |
-| github | v0.7.353 | GitHub integration |
-| mail | v0.7.353 | Email delivery (OTP codes, notifications) |
-| link-preview | v0.7.353 | Link previews in chat |
-| calendar | v0.7.353 | Google Calendar sync (optional) |
-| gmail | v0.7.353 | Gmail integration (optional) |
-| telegram-bot | v0.7.353 | Telegram bot (optional) |
+| account | v0.7.375 | Account management |
+| transactor | v0.7.375 | Data synchronization |
+| collaborator | v0.7.375 | Real-time collaboration |
+| front | v0.7.375 | Frontend |
+| workspace | v0.7.375 | Workspace management |
+| fulltext | v0.7.375 | Full-text search |
+| kvs | v0.7.375 | Key-value store (CockroachDB-backed) |
+| stats | v0.7.375 | Statistics |
+| rekoni | v0.7.375 | Document processing |
+| datalake | v0.7.375 | Data storage API |
+| hulypulse | v0.7.375 | Real-time updates |
+| stream | v0.7.375 | Media streaming |
+| preview | v0.7.375 | File previews |
+| media | v0.7.375 | Media processing |
+| love | v0.7.375 | Video calls service |
+| love-agent | v0.7.375 | Meeting transcription (via OpenAI or Deepgram STT) |
+| aibot | v0.7.375 | AI assistant |
+| rating | v0.7.375 | Rating service |
+| process-service | v0.7.375 | Background processing |
+| print | v0.7.375 | Print/export service |
+| github | v0.7.375 | GitHub integration |
+| mail | v0.7.375 | Email delivery (OTP codes, notifications) |
+| link-preview | v0.7.375 | Link previews in chat |
+| calendar | v0.7.375 | Google Calendar sync (optional) |
+| gmail | v0.7.375 | Gmail integration (optional) |
+| telegram-bot | v0.7.375 | Telegram bot (optional) |
 | cockroach-jobs | postgres:17-alpine | Reconciles meeting-minutes counters (workaround for [upstream bug](https://github.com/hcengineering/platform/pull/10527)) |
-| notification | v0.7.353 | Push notifications via VAPID (optional — requires keys) |
-| backup | v0.7.353 | Automatic workspace backup scheduler (hourly) |
-| backup-api | v0.7.353 | Backup download API |
-| export | v0.7.353 | Workspace data export (ZIP) |
-| sign | v0.7.353 | PDF digital signatures (auto-generates self-signed cert) |
+| notification | v0.7.375 | Push notifications via VAPID (optional — requires keys) |
+| backup | v0.7.375 | Automatic workspace backup scheduler (hourly) |
+| backup-api | v0.7.375 | Backup download API |
+| export | v0.7.375 | Workspace data export (ZIP) |
+| sign | v0.7.375 | PDF digital signatures (auto-generates self-signed cert) |
 
 </details>
 
 ### Huly V7 PG (Recommended) -- `hardcoreeng/*` images on PostgreSQL
 
-40 services using official `hardcoreeng/*` Docker images on **PostgreSQL 17** at v0.7.353. Same services as V7 Next but uses PostgreSQL instead of CockroachDB, saving ~1-1.5GB RAM at idle. Recommended for small VPS deployments (2-4GB RAM).
+40 services using official `hardcoreeng/*` Docker images on **PostgreSQL 17** at v0.7.375. Same services as V7 Next but uses PostgreSQL instead of CockroachDB, saving ~1-1.5GB RAM at idle. Recommended for small VPS deployments (2-4GB RAM).
 
 <details>
 <summary>Service list</summary>
@@ -362,42 +362,42 @@ Three blueprints are available:
 | mongo | 7-jammy | MongoDB (for aibot, calendar) |
 | nginx | 1.21.3 | Reverse proxy with cookie fixes |
 | livekit | latest | WebRTC server for video calls |
-| account | v0.7.353 | Account management |
-| transactor | v0.7.353 | Data synchronization |
-| collaborator | v0.7.353 | Real-time collaboration |
-| front | v0.7.353 | Frontend |
-| workspace | v0.7.353 | Workspace management |
-| fulltext | v0.7.353 | Full-text search |
-| kvs | v0.7.353 | Key-value store (PostgreSQL-backed via `bytes` domain alias) |
-| stats | v0.7.353 | Statistics |
-| rekoni | v0.7.353 | Document processing |
-| datalake | v0.7.353 | Data storage API |
-| hulypulse | v0.7.353 | Real-time updates |
-| stream | v0.7.353 | Media streaming |
-| preview | v0.7.353 | File previews |
-| media | v0.7.353 | Media processing |
-| love | v0.7.353 | Video calls service |
-| love-agent | v0.7.353 | Meeting transcription (via OpenAI or Deepgram STT) |
-| aibot | v0.7.353 | AI assistant |
-| rating | v0.7.353 | Rating service |
-| process-service | v0.7.353 | Background processing |
-| print | v0.7.353 | Print/export service |
-| github | v0.7.353 | GitHub integration |
-| mail | v0.7.353 | Email delivery (OTP codes, notifications) |
-| link-preview | v0.7.353 | Link previews in chat |
-| calendar | v0.7.353 | Google Calendar sync (optional) |
-| gmail | v0.7.353 | Gmail integration (optional) |
-| telegram-bot | v0.7.353 | Telegram bot (optional) |
+| account | v0.7.375 | Account management |
+| transactor | v0.7.375 | Data synchronization |
+| collaborator | v0.7.375 | Real-time collaboration |
+| front | v0.7.375 | Frontend |
+| workspace | v0.7.375 | Workspace management |
+| fulltext | v0.7.375 | Full-text search |
+| kvs | v0.7.375 | Key-value store (native PostgreSQL support since v0.7.375) |
+| stats | v0.7.375 | Statistics |
+| rekoni | v0.7.375 | Document processing |
+| datalake | v0.7.375 | Data storage API |
+| hulypulse | v0.7.375 | Real-time updates |
+| stream | v0.7.375 | Media streaming |
+| preview | v0.7.375 | File previews |
+| media | v0.7.375 | Media processing |
+| love | v0.7.375 | Video calls service |
+| love-agent | v0.7.375 | Meeting transcription (via OpenAI or Deepgram STT) |
+| aibot | v0.7.375 | AI assistant |
+| rating | v0.7.375 | Rating service |
+| process-service | v0.7.375 | Background processing |
+| print | v0.7.375 | Print/export service |
+| github | v0.7.375 | GitHub integration |
+| mail | v0.7.375 | Email delivery (OTP codes, notifications) |
+| link-preview | v0.7.375 | Link previews in chat |
+| calendar | v0.7.375 | Google Calendar sync (optional) |
+| gmail | v0.7.375 | Gmail integration (optional) |
+| telegram-bot | v0.7.375 | Telegram bot (optional) |
 | pg-jobs | postgres:17-alpine | Reconciles meeting-minutes counters (workaround for [upstream bug](https://github.com/hcengineering/platform/pull/10527)) |
-| notification | v0.7.353 | Push notifications via VAPID (optional — requires keys) |
-| backup | v0.7.353 | Automatic workspace backup scheduler (hourly) |
-| backup-api | v0.7.353 | Backup download API |
-| export | v0.7.353 | Workspace data export (ZIP) |
-| sign | v0.7.353 | PDF digital signatures (auto-generates self-signed cert) |
+| notification | v0.7.375 | Push notifications via VAPID (optional — requires keys) |
+| backup | v0.7.375 | Automatic workspace backup scheduler (hourly) |
+| backup-api | v0.7.375 | Backup download API |
+| export | v0.7.375 | Workspace data export (ZIP) |
+| sign | v0.7.375 | PDF digital signatures (auto-generates self-signed cert) |
 
 </details>
 
-> **How does KVS work on PostgreSQL?** The `hulykvs` service uses CockroachDB's `bytes` type in its DDL migration. PostgreSQL uses `bytea` instead. The huly-v7-pg blueprint creates a `CREATE DOMAIN bytes AS bytea;` alias in PostgreSQL's init script, letting the hulykvs migration run unmodified. No custom images needed.
+> **KVS on PostgreSQL**: As of v0.7.375, `hulykvs` natively supports PostgreSQL ([PR #5](https://github.com/hcengineering/hulykvs/pull/5)). No workarounds needed.
 
 ---
 
@@ -598,19 +598,13 @@ STT_PROVIDER=openai
 - Try redeploying
 
 ### Sign Up shows error (V7 Next / V7 PG)
-- **This is cosmetic.** In v0.7.353, signup creates your account but does not return a login token. The frontend tries to set a session cookie and fails, showing "Unknown error: Unexpected token...".
+- **This is cosmetic.** In v0.7.375, signup creates your account but does not return a login token. The frontend tries to set a session cookie and fails, showing "Unknown error: Unexpected token...".
 - **Your account was created.** Go to the **Sign In** page, enter your email/password, and complete the OTP email verification to log in.
 
 ### Meeting minutes not showing (V7 Next / V7 PG)
 - This is a known upstream bug ([PR #10527](https://github.com/hcengineering/platform/pull/10527)). Meeting minutes are saved to the database but the UI counter is never incremented, so the UI shows "No meeting minutes".
 - The `cockroach-jobs` (V7 Next) or `pg-jobs` (V7 PG) sidecar automatically reconciles these counters every 5 minutes (configurable via `RECONCILE_INTERVAL`). After one cycle, meeting minutes will appear in the UI.
 
-### KVS crash-loop on V7 PG (PostgreSQL)
-- **Expected behavior.** The `kvs` (hulykvs) service uses CockroachDB-specific SQL (`SET search_path TO $1`, `ALTER PRIMARY KEY USING COLUMNS`, duplicate `ON CONFLICT` columns) that PostgreSQL rejects. It will crash-loop until [hulykvs PR #5](https://github.com/hcengineering/hulykvs/pull/5) is merged and a new image is published.
-- **Impact is minimal.** KVS is only used by the **Google Calendar** and **Gmail** integrations to store sync cursor state (history IDs, page tokens). All core Huly features — issues, documents, chat, video calls, AI, search, meeting transcription — work perfectly without it.
-- **If you don't use Google Calendar or Gmail integration**, KVS being down has zero user-facing impact.
-- **If you do use Calendar/Gmail**, incremental sync won't work (can't track where it left off). Already-synced data is unaffected.
-- The V7 Next (CockroachDB) blueprint is not affected — kvs works natively on CockroachDB.
 
 ### 502 Bad Gateway
 - Wait a few seconds and refresh -- services take time to start
@@ -658,11 +652,11 @@ blueprints/huly-v7/                # Dokploy: haiodo/* v0.7.315 on PostgreSQL (l
   template.toml                    # Dokploy template (env vars, mounts, domains)
   docker-compose.yml               # 29 services orchestration
   huly.svg                         # Logo for Dokploy UI
-blueprints/huly-v7-next/           # Dokploy: hardcoreeng/* v0.7.353 on CockroachDB
+blueprints/huly-v7-next/           # Dokploy: hardcoreeng/* v0.7.375 on CockroachDB
   template.toml                    # Dokploy template (env vars, mounts, domains)
   docker-compose.yml               # 40 services orchestration
   huly.svg                         # Logo for Dokploy UI
-blueprints/huly-v7-pg/             # Dokploy: hardcoreeng/* v0.7.353 on PostgreSQL (recommended)
+blueprints/huly-v7-pg/             # Dokploy: hardcoreeng/* v0.7.375 on PostgreSQL (recommended)
   template.toml                    # Dokploy template (env vars, mounts, domains)
   docker-compose.yml               # 40 services orchestration (PostgreSQL instead of CockroachDB)
   huly.svg                         # Logo for Dokploy UI
@@ -683,7 +677,6 @@ coolify/
       nginx/                       # Nginx reverse proxy config + entrypoint
       livekit/                     # LiveKit config + entrypoint
       love-agent/                  # Meeting transcription entrypoint
-      postgres/                    # PostgreSQL init script (KVS bytes domain)
       pg-jobs/                     # Meeting-minutes counter reconciliation
       sign/                        # PDF signing cert auto-generation
   huly.yaml                        # Coolify upstream template (single file, future PR)

@@ -4,6 +4,11 @@ All notable changes to this project are documented here. This project maintains 
 
 ## huly-v7-pg
 
+### v3.2.1 (2026-02-22)
+- **change**: Bump Huly upstream to v0.7.375.
+- **fix**: KVS now natively supports PostgreSQL — removed `CREATE DOMAIN bytes AS bytea;` init script workaround. [hulykvs PR #5](https://github.com/hcengineering/hulykvs/pull/5) merged upstream and shipped in v0.7.375. Google Calendar and Gmail sync state now works on PostgreSQL.
+- **fix**: Stats image uses `STATS_VERSION` with `s`-prefix tags (`s0.7.375`). Upstream stopped publishing `v`-prefix tags for `hardcoreeng/stats` after v0.7.353.
+
 ### v3.2.0 (2026-02-20)
 - **add**: New PostgreSQL blueprint variant — same 40 services as `huly-v7-next` but replaces CockroachDB with PostgreSQL 17 (`postgres:17-alpine`). Saves ~1-1.5GB RAM at idle.
 - **add**: KVS DDL compatibility via `CREATE DOMAIN bytes AS bytea;` in PostgreSQL init script.
@@ -15,6 +20,10 @@ All notable changes to this project are documented here. This project maintains 
 - Based on upstream PostgreSQL support (PR #10331, Dec 2025) included in v0.7.353.
 
 ## huly-v7-next
+
+### v3.1.1 (2026-02-22)
+- **change**: Bump Huly upstream to v0.7.375.
+- **fix**: Stats image uses `STATS_VERSION` with `s`-prefix tags (`s0.7.375`). Upstream stopped publishing `v`-prefix tags for `hardcoreeng/stats` after v0.7.353.
 
 ### v3.1.0 (2026-02-19)
 - **add**: Coolify and Docker Compose support — two new deployment methods alongside existing Dokploy blueprints:
@@ -92,7 +101,16 @@ All notable changes to this project are documented here. This project maintains 
 - Added GitHub integration support.
 - Added STT configuration for meeting transcription.
 
+## Research
+
+### 2026-02-21
+- **add**: `improvements-aibot-tooling.md` — research document analyzing approaches to inject custom tools into Huly's AI assistant (`hardcoreeng/ai-bot`) without upstream changes. Covers current architecture, Huly API surface (`@hcengineering/api-client`, `@firfi/huly-mcp`), 4 injection patterns (Smart Context Proxy, Tool Loop Interceptor, MCP Sidecar, Custom Image), recommended phased evolution path, tool catalog, and implementation roadmap.
+- **add**: `research-huly-ai-agent.md` — comprehensive analysis of the newer `hcengineering/huly-ai-agent` repository (Rust, 330K LoC). Covers architecture, 25+ tools, native MCP support, memory system, scheduler, comparison with `pod-ai-bot`, and self-hosting feasibility. Key finding: all core dependencies (`hulyrs`, `mcp-core`) are public — source is fully buildable.
+
 ## Tooling
+
+### 2026-02-22
+- **change**: `bump-version.sh huly` now also updates `STATS_VERSION` (s-prefix) across all files. Stats image stopped getting v-prefix tags upstream after v0.7.353.
 
 ### 2026-02-20
 - **change**: Rewrite `scripts/bump-version.sh` to manage `huly-v7-next` and `huly-v7-pg` (legacy `huly-v7` left as-is). New subcommands: `next`, `pg`, `patch`/`minor`/`major`, `huly`, `status`.

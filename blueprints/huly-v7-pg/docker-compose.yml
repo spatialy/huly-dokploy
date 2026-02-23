@@ -20,7 +20,6 @@ services:
       - POSTGRES_PASSWORD=${PG_PASSWORD}
     volumes:
       - pg_data:/var/lib/postgresql/data
-      - ../files/volumes/postgres/init-kvs.sql:/docker-entrypoint-initdb.d/init-kvs.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U huly -d huly"]
       interval: 5s
@@ -303,7 +302,7 @@ services:
     restart: unless-stopped
 
   stats:
-    image: hardcoreeng/stats:${HULY_VERSION}
+    image: hardcoreeng/stats:${STATS_VERSION}
     environment:
       - PORT=4900
       - SERVER_SECRET=${SECRET}

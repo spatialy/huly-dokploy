@@ -7,8 +7,8 @@ Dokploy blueprint template for self-hosting [Huly V7](https://huly.io/) — an a
 Forked from `shali1995/huly-dokploy-fucking-working`. Three blueprints are available:
 
 - **`huly-v7`** (v1.1.2) — Legacy blueprint using `haiodo/*` images at v0.7.315 (from the intabia-fusion PostgreSQL fork). Stable fallback.
-- **`huly-v7-next`** (v3.0.0+) — Uses official `hardcoreeng/*` upstream images at v0.7.353 on CockroachDB (matching the official upstream). Full service stack including `kvs`, `calendar`, `gmail`, `telegram-bot`, `link-preview`, `aibot` + MongoDB, and `love-agent` (meeting transcription). **Breaking change from v2.x** — migrated from PostgreSQL to CockroachDB.
-- **`huly-v7-pg`** (v3.2.0+) — Same as `huly-v7-next` but uses **PostgreSQL 17** instead of CockroachDB. Saves ~1-1.5GB RAM. Uses `CREATE DOMAIN bytes AS bytea;` for KVS compatibility and `PROCEED_V7_MONGO=false` on account service. Recommended for small VPS deployments.
+- **`huly-v7-next`** (v3.0.0+) — Uses official `hardcoreeng/*` upstream images at v0.7.375 on CockroachDB (matching the official upstream). Full service stack including `kvs`, `calendar`, `gmail`, `telegram-bot`, `link-preview`, `aibot` + MongoDB, and `love-agent` (meeting transcription). **Breaking change from v2.x** — migrated from PostgreSQL to CockroachDB.
+- **`huly-v7-pg`** (v3.2.0+) — Same as `huly-v7-next` but uses **PostgreSQL 17** instead of CockroachDB. Saves ~1-1.5GB RAM. Uses `PROCEED_V7_MONGO=false` on account service. KVS natively supports PostgreSQL since v0.7.375. Recommended for small VPS deployments.
 
 ## Repository Structure
 
@@ -20,12 +20,12 @@ blueprints/huly-v7/                    # Dokploy: haiodo/* v0.7.315 (legacy)
   template.toml                        # Dokploy template: variables, env, domains, mounted files
   docker-compose.yml                   # 29 services orchestration (including LiveKit)
   huly.svg                             # Logo for Dokploy UI
-blueprints/huly-v7-next/               # Dokploy: hardcoreeng/* v0.7.353 on CockroachDB
+blueprints/huly-v7-next/               # Dokploy: hardcoreeng/* v0.7.375 on CockroachDB
   template.toml                        # Same structure, official upstream images
   docker-compose.yml                   # 40 services (CockroachDB, kvs, calendar, gmail, telegram, love-agent, backup, export, notification, sign, cockroach-jobs)
   huly.svg                             # Logo for Dokploy UI
-blueprints/huly-v7-pg/                 # Dokploy: hardcoreeng/* v0.7.353 on PostgreSQL (recommended)
-  template.toml                        # PostgreSQL variant (bytes domain alias for kvs)
+blueprints/huly-v7-pg/                 # Dokploy: hardcoreeng/* v0.7.375 on PostgreSQL (recommended)
+  template.toml                        # PostgreSQL variant
   docker-compose.yml                   # 40 services (PostgreSQL, kvs, calendar, gmail, telegram, love-agent, backup, export, notification, sign, pg-jobs)
   huly.svg                             # Logo for Dokploy UI
 coolify/
@@ -47,7 +47,6 @@ coolify/
       nginx/                           # Same nginx config
       livekit/                         # Same livekit config
       love-agent/                      # Same love-agent entrypoint
-      postgres/init-kvs.sql            # CREATE DOMAIN bytes AS bytea (kvs compatibility)
       pg-jobs/reconcile.sh             # Meeting-minutes counter reconciliation (PostgreSQL)
       sign/                            # Same sign entrypoint
   huly.yaml                            # Coolify upstream template (single file, SERVICE_* magic vars)
@@ -78,7 +77,7 @@ All traffic enters through **nginx:80**, which routes by URL path prefix:
 
 ### Database Architecture
 
-**huly-v7-pg (v3.2.0)** uses **PostgreSQL 17** (`postgres:17-alpine`). Upstream added PostgreSQL support in PR #10331 (Dec 2025), included in v0.7.353. Uses `PROCEED_V7_MONGO=false` on account to skip MongoDB migration path. Saves ~1-1.5GB RAM vs CockroachDB. MongoDB is still used by `aibot` and `calendar`. **Known issue:** `kvs` (hulykvs) crash-loops on PostgreSQL — the `CREATE DOMAIN bytes AS bytea` fixes the DDL migration, but the Rust runtime also has CockroachDB-specific SQL (`SET search_path TO $1`, `ALTER PRIMARY KEY USING COLUMNS`, duplicate `ON CONFLICT`). Waiting on [hulykvs PR #5](https://github.com/hcengineering/hulykvs/pull/5). Impact is minimal: kvs only stores sync cursors for Google Calendar and Gmail integrations — all core features work without it.
+**huly-v7-pg (v3.2.0)** uses **PostgreSQL 17** (`postgres:17-alpine`). Upstream added PostgreSQL support in PR #10331 (Dec 2025). Uses `PROCEED_V7_MONGO=false` on account to skip MongoDB migration path. Saves ~1-1.5GB RAM vs CockroachDB. MongoDB is still used by `aibot` and `calendar`. KVS natively supports PostgreSQL since v0.7.375 ([hulykvs PR #5](https://github.com/hcengineering/hulykvs/pull/5)).
 
 **huly-v7-next (v3.0.0)** uses **CockroachDB** (`cockroachdb/cockroach:latest-v24.2`), matching the official upstream. CockroachDB speaks the `postgres://` wire protocol — `CR_DB_URL=postgres://user:pass@cockroach:26257/db`. This means all `hardcoreeng/*` services work natively, including `kvs` (which uses CockroachDB-specific `$1` parameterized DDL). MongoDB is also used by `aibot`, `calendar`, and `telegram-bot`.
 
@@ -122,7 +121,7 @@ livekit_api_key    = "${password:16}"   → LIVEKIT_API_KEY
 livekit_api_secret = "${base64:32}"     → LIVEKIT_API_SECRET
 ```
 
-These feed into `[config] env` which becomes the `.env` for docker-compose. The `${HULY_VERSION}` variable pins all service image tags (`v0.7.315` for huly-v7, `v0.7.353` for huly-v7-next/huly-v7-pg). The `TEMPLATE_VERSION` env var tracks our template's own semver (separate from upstream Huly).
+These feed into `[config] env` which becomes the `.env` for docker-compose. The `${HULY_VERSION}` variable pins all service image tags (`v0.7.315` for huly-v7, `v0.7.375` for huly-v7-next/huly-v7-pg). The `stats` image uses `${STATS_VERSION}` with `s`-prefix tags (upstream stopped publishing `v`-prefix for stats after v0.7.353). The `TEMPLATE_VERSION` env var tracks our template's own semver (separate from upstream Huly).
 
 ## Key Configuration
 
@@ -158,7 +157,7 @@ Two independent versions are tracked:
 | Version | What it tracks | Where it lives |
 |---------|---------------|----------------|
 | **Template version** (`v1.1.x` / `v3.1.x` / `v3.2.x`) | Our blueprint/template changes | `meta.json`, `template.toml` `TEMPLATE_VERSION` |
-| **Huly version** (`v0.7.315` / `v0.7.353`) | Upstream Docker image tags | `template.toml` `HULY_VERSION`, `coolify/*/.env.example`, `coolify/huly.yaml` defaults, `meta.json` description |
+| **Huly version** (`v0.7.315` / `v0.7.375`) | Upstream Docker image tags | `template.toml` `HULY_VERSION` + `STATS_VERSION`, `coolify/*/.env.example`, `coolify/huly.yaml` defaults, `meta.json` description |
 
 Bump the template version: `./scripts/bump-version.sh [patch|minor|major|next|pg|huly]`
 
@@ -169,7 +168,7 @@ The bump script manages `huly-v7-next` and `huly-v7-pg` (legacy `huly-v7` is lef
 **Dokploy mount behavior**: `[[config.mounts]]` content is written verbatim — `[variables]` are NOT interpolated. Use runtime entrypoint scripts with `sed` replacement (same pattern as nginx and livekit) to inject env var values into config files.
 
 ### Update Huly upstream version
-Run `./scripts/bump-version.sh huly v0.7.360` — this updates `HULY_VERSION` in both `template.toml` files, both `coolify/*/.env.example` files, the `coolify/huly.yaml` inline defaults, syncs the version into `meta.json` descriptions, and auto-bumps both template patch versions.
+Run `./scripts/bump-version.sh huly v0.7.360` — this updates `HULY_VERSION` and `STATS_VERSION` in both `template.toml` files, both `coolify/*/.env.example` files, the `coolify/huly.yaml` inline defaults, syncs the version into `meta.json` descriptions, and auto-bumps both template patch versions.
 
 ### Add/modify a service
 1. Add the service in the relevant blueprint's `docker-compose.yml` (e.g., `blueprints/huly-v7-pg/docker-compose.yml`)

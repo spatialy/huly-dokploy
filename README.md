@@ -277,12 +277,12 @@ After this, new users can only be invited by existing users through the Huly UI.
 
 ### Disable Sample Data
 
-By default, this template ships with `INIT_WORKSPACE=none`, so new workspaces are created **empty** (no demo projects, sample issues, or onboarding content). This gives you a clean slate.
+By default, this template ships with `INIT_REPO_DIR=/nonexistent`, so new workspaces are created **completely empty** — no demo projects, sample issues, Card types, or onboarding content. This gives you a clean slate.
 
-To restore the upstream default behavior (sample "Welcome to Huly!" project, "Game Design (Example)" project, Quick-Start Docs, etc.), set:
+To restore the upstream default behavior (sample "Welcome to Huly!" project, "Game Design (Example)" project, Card types, Quick-Start Docs, etc.), set:
 
 ```
-INIT_WORKSPACE=huly
+INIT_REPO_DIR=./init-scripts
 ```
 
 ### Template Versioning

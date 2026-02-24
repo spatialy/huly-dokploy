@@ -10,8 +10,8 @@ All notable changes to this project are documented here. This project maintains 
 - **change**: Love service `STORAGE_PROVIDER_NAME` changed from `minio` to `s3`.
 - **change**: MinIO container credentials now wired via `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` from `S3_ACCESS_KEY`/`S3_SECRET_KEY`.
 
-### v3.2.3 (2026-02-23)
-- **add**: `INIT_WORKSPACE=none` — new workspaces are now created empty (no sample projects/issues). Set to `huly` to restore demo content.
+### v3.2.5 (2026-02-23)
+- **fix**: Replace `INIT_WORKSPACE=none` with `INIT_REPO_DIR=/nonexistent` — the previous approach didn't fully work because the upstream `initializeWorkspace()` falls through to the default "huly" init script when no script name matches. The new approach points the init scripts directory to a non-existent path, causing `initializeWorkspace()` to skip entirely. New workspaces are now truly empty (no demo projects, Card types, or sample content). Set `INIT_REPO_DIR=./init-scripts` to restore demo content.
 
 ### v3.2.1 (2026-02-22)
 - **change**: Bump Huly upstream to v0.7.375.
@@ -36,8 +36,8 @@ All notable changes to this project are documented here. This project maintains 
 - **change**: Love service `STORAGE_PROVIDER_NAME` changed from `minio` to `s3`.
 - **change**: MinIO container credentials now wired via `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` from `S3_ACCESS_KEY`/`S3_SECRET_KEY`.
 
-### v3.1.3 (2026-02-23)
-- **add**: `INIT_WORKSPACE=none` — new workspaces are now created empty (no sample projects/issues). Set to `huly` to restore demo content.
+### v3.1.5 (2026-02-23)
+- **fix**: Replace `INIT_WORKSPACE=none` with `INIT_REPO_DIR=/nonexistent` — the previous approach didn't fully work because the upstream `initializeWorkspace()` falls through to the default "huly" init script when no script name matches. The new approach points the init scripts directory to a non-existent path, causing `initializeWorkspace()` to skip entirely. New workspaces are now truly empty (no demo projects, Card types, or sample content). Set `INIT_REPO_DIR=./init-scripts` to restore demo content.
 
 ### v3.1.1 (2026-02-22)
 - **change**: Bump Huly upstream to v0.7.375.

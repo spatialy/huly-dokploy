@@ -139,7 +139,7 @@ These feed into `[config] env` which becomes the `.env` for docker-compose. The 
 - `SIGN_CERTIFICATE_PASSWORD` — password for the PDF signing PKCS#12 certificate (default: `password` for auto-generated self-signed cert)
 - `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION` — S3 object storage config (defaults: `http://minio:9000`, `minioadmin`, `minioadmin`, `us-east-1`). Override for external S3 (AWS, Backblaze B2, Cloudflare R2). Pre-create buckets: `blobs`, `eu`, `backups`.
 - `DISABLE_SIGNUP` — set to `true` after first user creation to prevent public registrations. Must be on both `account` and `front` services (already wired in all compose files). Defaults to `false`.
-- `INIT_WORKSPACE` — controls whether new workspaces get sample data. `none` (default) creates empty workspaces; `huly` seeds demo projects and onboarding content. Set on the `workspace` service.
+- `INIT_REPO_DIR` — controls workspace initialization scripts path. `/nonexistent` (default) creates completely empty workspaces; `./init-scripts` seeds demo projects, Card types, and onboarding content. Set on the `workspace` service. Replaces the previous `INIT_WORKSPACE=none` approach which didn't fully work (upstream code falls through to the default "huly" init script when the name doesn't match).
 - `PLATFORM_ADMIN_EMAILS` — admin user emails
 - `TITLE`, `DEFAULT_LANGUAGE`, `LAST_NAME_FIRST` — UI customization
 

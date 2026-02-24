@@ -596,6 +596,49 @@ PUSH_PRIVATE_KEY=...         # From "Private Key" output
 PUSH_SUBJECT=mailto:admin@yourdomain.com
 ```
 
+## Optional: External S3 Storage (V7 Next / V7 PG)
+
+By default, Huly uses the bundled **MinIO** container for S3-compatible object storage. You can switch to an external S3 provider (AWS S3, Backblaze B2, Cloudflare R2, DigitalOcean Spaces) by setting 4 env vars:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `S3_ENDPOINT` | `http://minio:9000` | S3 endpoint URL |
+| `S3_ACCESS_KEY` | `minioadmin` | Access key / username |
+| `S3_SECRET_KEY` | `minioadmin` | Secret key / password |
+| `S3_REGION` | `us-east-1` | S3 region |
+
+**Examples:**
+
+AWS S3:
+```
+S3_ENDPOINT=https://s3.us-east-1.amazonaws.com
+S3_ACCESS_KEY=AKIA...
+S3_SECRET_KEY=...
+S3_REGION=us-east-1
+```
+
+Backblaze B2:
+```
+S3_ENDPOINT=https://s3.us-west-004.backblazeb2.com
+S3_ACCESS_KEY=your-key-id
+S3_SECRET_KEY=your-application-key
+S3_REGION=us-west-004
+```
+
+Cloudflare R2:
+```
+S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+S3_ACCESS_KEY=your-access-key
+S3_SECRET_KEY=your-secret-key
+S3_REGION=auto
+```
+
+> **Important:** Pre-create these buckets on your external provider: `blobs`, `eu`, `backups`. MinIO creates them dynamically, but external providers may not.
+>
+> The bundled MinIO service still runs when using external S3 (it's harmless). To save resources, you can comment out or remove the `minio` service from your compose file.
+>
+> **No migration tooling** is provided. Switching from MinIO to external S3 does not migrate existing data.
+
 ## Optional: Backup & Export (V7 Next / V7 PG)
 
 **Backup** is enabled by default — no configuration needed. The backup service runs hourly, stores snapshots in the `backups` MinIO bucket, and retains the last 84 snapshots (~3.5 days at hourly intervals). Backups are downloadable via the `/_backup/` endpoint.

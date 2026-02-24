@@ -55,6 +55,9 @@ services:
   minio:
     image: "minio/minio"
     command: server /data --address ":9000" --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${S3_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${S3_SECRET_KEY}
     volumes:
       - files:/data
     healthcheck:
@@ -285,7 +288,7 @@ services:
       - ACCOUNTS_URL=http://account:3000
       - STATS_URL=http://stats:4900
       - DB_URL=${PG_DB_URL}
-      - BUCKETS=blobs,eu|http://minio:9000?accessKey=minioadmin&secretKey=minioadmin
+      - BUCKETS=blobs,eu|${S3_ENDPOINT}?accessKey=${S3_ACCESS_KEY}&secretKey=${S3_SECRET_KEY}&region=${S3_REGION}
       - QUEUE_CONFIG=redpanda:9092
     restart: unless-stopped
 
@@ -364,8 +367,8 @@ services:
       - STREAM_BASE_URL=https://${HOST_ADDRESS}/_stream
       - STREAM_MAX_PARALLEL_SCALING_COUNT=2
       - STREAM_LOG_LEVEL=debug
-      - AWS_ACCESS_KEY_ID=minioadmin
-      - AWS_SECRET_ACCESS_KEY=minioadmin
+      - AWS_ACCESS_KEY_ID=${S3_ACCESS_KEY}
+      - AWS_SECRET_ACCESS_KEY=${S3_SECRET_KEY}
       - STREAM_QUEUE_CONFIG=redpanda:9092
     restart: unless-stopped
 
@@ -397,8 +400,8 @@ services:
       - ACCOUNTS_URL=http://account:3000
       - DB_URL=${PG_DB_URL}
       - STORAGE_CONFIG=datalake|http://datalake:4031
-      - S3_STORAGE_CONFIG=s3|http://minio:9000?accessKey=minioadmin&secretKey=minioadmin
-      - STORAGE_PROVIDER_NAME=minio
+      - S3_STORAGE_CONFIG=s3|${S3_ENDPOINT}?accessKey=${S3_ACCESS_KEY}&secretKey=${S3_SECRET_KEY}&region=${S3_REGION}
+      - STORAGE_PROVIDER_NAME=s3
       - LIVEKIT_HOST=ws://livekit:7880
       - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
@@ -495,7 +498,7 @@ services:
       - ACCOUNTS_URL=http://account:3000
       - SECRET=${SECRET}
       - SERVICE_ID=telegram-bot-service
-      - STORAGE_CONFIG=minio|minio?accessKey=minioadmin&secretKey=minioadmin
+      - STORAGE_CONFIG=s3|${S3_ENDPOINT}?accessKey=${S3_ACCESS_KEY}&secretKey=${S3_SECRET_KEY}
       - QUEUE_CONFIG=redpanda:9092
       - QUEUE_REGION=
     restart: unless-stopped
@@ -561,8 +564,8 @@ services:
       - ACCOUNTS_URL=http://account:3000
       - ACCOUNTS_DB_URL=${PG_DB_URL}
       - DB_URL=${PG_DB_URL}
-      - STORAGE=minio|minio?accessKey=minioadmin&secretKey=minioadmin
-      - WORKSPACE_STORAGE=minio|minio?accessKey=minioadmin&secretKey=minioadmin
+      - STORAGE=s3|${S3_ENDPOINT}?accessKey=${S3_ACCESS_KEY}&secretKey=${S3_SECRET_KEY}
+      - WORKSPACE_STORAGE=s3|${S3_ENDPOINT}?accessKey=${S3_ACCESS_KEY}&secretKey=${S3_SECRET_KEY}
       - BUCKET_NAME=backups
       - INTERVAL=3600
       - TIMEOUT=3600
@@ -582,7 +585,7 @@ services:
       - SECRET=${SECRET}
       - ACCOUNTS_URL=http://account:3000
       - BUCKET_NAME=backups
-      - STORAGE=minio|minio?accessKey=minioadmin&secretKey=minioadmin
+      - STORAGE=s3|${S3_ENDPOINT}?accessKey=${S3_ACCESS_KEY}&secretKey=${S3_SECRET_KEY}
     restart: unless-stopped
 
   export:

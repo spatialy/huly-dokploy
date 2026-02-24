@@ -4,6 +4,12 @@ All notable changes to this project are documented here. This project maintains 
 
 ## huly-v7-pg
 
+### v3.2.4 (2026-02-23)
+- **add**: External S3 storage support. New env vars `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION` default to bundled MinIO but can be overridden for AWS S3, Backblaze B2, Cloudflare R2, or any S3-compatible provider. Zero-config for existing users.
+- **change**: Standardize on `s3|` adapter prefix (replacing `minio|` on backup, backup-api, telegram-bot). Love already used `s3|` with MinIO.
+- **change**: Love service `STORAGE_PROVIDER_NAME` changed from `minio` to `s3`.
+- **change**: MinIO container credentials now wired via `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` from `S3_ACCESS_KEY`/`S3_SECRET_KEY`.
+
 ### v3.2.3 (2026-02-23)
 - **add**: `INIT_WORKSPACE=none` — new workspaces are now created empty (no sample projects/issues). Set to `huly` to restore demo content.
 
@@ -23,6 +29,12 @@ All notable changes to this project are documented here. This project maintains 
 - Based on upstream PostgreSQL support (PR #10331, Dec 2025) included in v0.7.353.
 
 ## huly-v7-next
+
+### v3.1.4 (2026-02-23)
+- **add**: External S3 storage support. New env vars `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION` default to bundled MinIO but can be overridden for AWS S3, Backblaze B2, Cloudflare R2, or any S3-compatible provider. Zero-config for existing users.
+- **change**: Standardize on `s3|` adapter prefix (replacing `minio|` on backup, backup-api, telegram-bot). Love already used `s3|` with MinIO.
+- **change**: Love service `STORAGE_PROVIDER_NAME` changed from `minio` to `s3`.
+- **change**: MinIO container credentials now wired via `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` from `S3_ACCESS_KEY`/`S3_SECRET_KEY`.
 
 ### v3.1.3 (2026-02-23)
 - **add**: `INIT_WORKSPACE=none` — new workspaces are now created empty (no sample projects/issues). Set to `huly` to restore demo content.

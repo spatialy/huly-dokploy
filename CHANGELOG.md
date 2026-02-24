@@ -10,6 +10,9 @@ All notable changes to this project are documented here. This project maintains 
 - **change**: Love service `STORAGE_PROVIDER_NAME` changed from `minio` to `s3`.
 - **change**: MinIO container credentials now wired via `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` from `S3_ACCESS_KEY`/`S3_SECRET_KEY`.
 
+### v3.2.6 (2026-02-24)
+- **fix**: Add inline defaults for S3 env vars (`S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION`) and `STORAGE_CONFIG` in docker-compose.yml. Fixes datalake crash-loop (`TypeError: Invalid URL` on `?accessKey=&secretKey=&region=`) when deploying via Dokploy Git provider, which doesn't process template.toml `[config] env` defaults. Also fixes collaborator `fetch failed` errors (couldn't reach crashed datalake).
+
 ### v3.2.5 (2026-02-23)
 - **fix**: Replace `INIT_WORKSPACE=none` with `INIT_REPO_DIR=/nonexistent` — the previous approach didn't fully work because the upstream `initializeWorkspace()` falls through to the default "huly" init script when no script name matches. The new approach points the init scripts directory to a non-existent path, causing `initializeWorkspace()` to skip entirely. New workspaces are now truly empty (no demo projects, Card types, or sample content). Set `INIT_REPO_DIR=./init-scripts` to restore demo content.
 
@@ -35,6 +38,9 @@ All notable changes to this project are documented here. This project maintains 
 - **change**: Standardize on `s3|` adapter prefix (replacing `minio|` on backup, backup-api, telegram-bot). Love already used `s3|` with MinIO.
 - **change**: Love service `STORAGE_PROVIDER_NAME` changed from `minio` to `s3`.
 - **change**: MinIO container credentials now wired via `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` from `S3_ACCESS_KEY`/`S3_SECRET_KEY`.
+
+### v3.1.6 (2026-02-24)
+- **fix**: Add inline defaults for S3 env vars and `STORAGE_CONFIG` in docker-compose.yml. Fixes datalake crash-loop when deploying via Dokploy Git provider (same fix as huly-v7-pg v3.2.6).
 
 ### v3.1.5 (2026-02-23)
 - **fix**: Replace `INIT_WORKSPACE=none` with `INIT_REPO_DIR=/nonexistent` — the previous approach didn't fully work because the upstream `initializeWorkspace()` falls through to the default "huly" init script when no script name matches. The new approach points the init scripts directory to a non-existent path, causing `initializeWorkspace()` to skip entirely. New workspaces are now truly empty (no demo projects, Card types, or sample content). Set `INIT_REPO_DIR=./init-scripts` to restore demo content.

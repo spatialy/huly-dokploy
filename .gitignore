@@ -1,5 +1,5 @@
-# Access migration research (not part of the Huly template)
-ACCESS_MIGRATION.md
+# Research docs (not part of the Huly template)
+_RESEARCH_DOCS/
 
 # Claude Code local settings (contains user-specific permissions)
 .claude/settings.local.json

@@ -482,7 +482,7 @@ services:
     restart: unless-stopped
 
   rekoni:
-    image: hardcoreeng/rekoni-service:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/rekoni-service:${HULY_VERSION:-v0.7.382}
     environment:
       - SECRET=${SERVICE_PASSWORD_SECRET}
     deploy:
@@ -492,7 +492,7 @@ services:
     restart: unless-stopped
 
   mail:
-    image: hardcoreeng/mail:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/mail:${HULY_VERSION:-v0.7.382}
     environment:
       - PORT=8097
       - SOURCE=${MAIL_FROM:-}
@@ -507,7 +507,7 @@ services:
     restart: unless-stopped
 
   print:
-    image: hardcoreeng/print:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/print:${HULY_VERSION:-v0.7.382}
     environment:
       - SECRET=${SERVICE_PASSWORD_SECRET}
       - ACCOUNTS_URL=http://account:3000
@@ -516,7 +516,7 @@ services:
     restart: unless-stopped
 
   github:
-    image: hardcoreeng/github:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/github:${HULY_VERSION:-v0.7.382}
     environment:
       - PORT=3500
       - STORAGE_CONFIG=datalake|http://datalake:4031
@@ -534,7 +534,7 @@ services:
     restart: unless-stopped
 
   transactor:
-    image: hardcoreeng/transactor:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/transactor:${HULY_VERSION:-v0.7.382}
     environment:
       - SERVER_PORT=3333
       - SERVER_SECRET=${SERVICE_PASSWORD_SECRET}
@@ -552,7 +552,7 @@ services:
     restart: unless-stopped
 
   collaborator:
-    image: hardcoreeng/collaborator:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/collaborator:${HULY_VERSION:-v0.7.382}
     environment:
       - COLLABORATOR_PORT=3078
       - SECRET=${SERVICE_PASSWORD_SECRET}
@@ -562,7 +562,7 @@ services:
     restart: unless-stopped
 
   account:
-    image: hardcoreeng/account:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/account:${HULY_VERSION:-v0.7.382}
     depends_on:
       cockroach:
         condition: service_started
@@ -585,7 +585,7 @@ services:
     restart: unless-stopped
 
   workspace:
-    image: hardcoreeng/workspace:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/workspace:${HULY_VERSION:-v0.7.382}
     environment:
       - SERVER_SECRET=${SERVICE_PASSWORD_SECRET}
       - DB_URL=postgres://huly:${SERVICE_PASSWORD_COCKROACH}@cockroach:26257/huly
@@ -600,7 +600,7 @@ services:
     restart: unless-stopped
 
   front:
-    image: hardcoreeng/front:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/front:${HULY_VERSION:-v0.7.382}
     environment:
       - SERVER_PORT=8080
       - SERVER_SECRET=${SERVICE_PASSWORD_SECRET}
@@ -641,7 +641,7 @@ services:
     restart: unless-stopped
 
   datalake:
-    image: hardcoreeng/datalake:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/datalake:${HULY_VERSION:-v0.7.382}
     extra_hosts: ['host.docker.internal:host-gateway']
     depends_on:
       minio:
@@ -663,7 +663,7 @@ services:
     restart: unless-stopped
 
   fulltext:
-    image: hardcoreeng/fulltext:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/fulltext:${HULY_VERSION:-v0.7.382}
     environment:
       - SERVER_SECRET=${SERVICE_PASSWORD_SECRET}
       - DB_URL=postgres://huly:${SERVICE_PASSWORD_COCKROACH}@cockroach:26257/huly
@@ -677,14 +677,14 @@ services:
     restart: unless-stopped
 
   stats:
-    image: hardcoreeng/stats:${STATS_VERSION:-s0.7.375}
+    image: hardcoreeng/stats:${HULY_VERSION:-v0.7.382}
     environment:
       - PORT=4900
       - SERVER_SECRET=${SERVICE_PASSWORD_SECRET}
     restart: unless-stopped
 
   rating:
-    image: hardcoreeng/rating:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/rating:${HULY_VERSION:-v0.7.382}
     extra_hosts: ['host.docker.internal:host-gateway']
     depends_on:
       redpanda:
@@ -701,7 +701,7 @@ services:
     restart: unless-stopped
 
   hulypulse:
-    image: hardcoreeng/hulypulse:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/hulypulse:${HULY_VERSION:-v0.7.382}
     depends_on:
       redis:
         condition: service_started
@@ -713,7 +713,7 @@ services:
     restart: unless-stopped
 
   process-service:
-    image: hardcoreeng/process:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/process:${HULY_VERSION:-v0.7.382}
     extra_hosts: ['host.docker.internal:host-gateway']
     depends_on:
       redpanda:
@@ -727,7 +727,7 @@ services:
     restart: unless-stopped
 
   stream:
-    image: hardcoreeng/stream:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/stream:${HULY_VERSION:-v0.7.382}
     extra_hosts: ['host.docker.internal:host-gateway']
     environment:
       - STREAM_ENDPOINT_URL=datalake://datalake:4031
@@ -743,7 +743,7 @@ services:
     restart: unless-stopped
 
   media:
-    image: hardcoreeng/media:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/media:${HULY_VERSION:-v0.7.382}
     extra_hosts: ['host.docker.internal:host-gateway']
     environment:
       - ACCOUNTS_URL=http://account:3000
@@ -752,7 +752,7 @@ services:
     restart: unless-stopped
 
   preview:
-    image: hardcoreeng/preview:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/preview:${HULY_VERSION:-v0.7.382}
     extra_hosts: ['host.docker.internal:host-gateway']
     environment:
       - SECRET=${SERVICE_PASSWORD_SECRET}
@@ -762,7 +762,7 @@ services:
     restart: unless-stopped
 
   love:
-    image: hardcoreeng/love:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/love:${HULY_VERSION:-v0.7.382}
     extra_hosts: ['host.docker.internal:host-gateway']
     environment:
       - PORT=8097
@@ -778,7 +778,7 @@ services:
     restart: unless-stopped
 
   link-preview:
-    image: hardcoreeng/link-preview:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/link-preview:${HULY_VERSION:-v0.7.382}
     environment:
       - SECRET=${SERVICE_PASSWORD_SECRET}
       - PORT=4041
@@ -791,7 +791,7 @@ services:
     restart: unless-stopped
 
   aibot:
-    image: hardcoreeng/ai-bot:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/ai-bot:${HULY_VERSION:-v0.7.382}
     extra_hosts: ['host.docker.internal:host-gateway']
     depends_on:
       - account
@@ -818,7 +818,7 @@ services:
     restart: unless-stopped
 
   kvs:
-    image: hardcoreeng/hulykvs:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/hulykvs:${HULY_VERSION:-v0.7.382}
     depends_on:
       cockroach:
         condition: service_started
@@ -828,7 +828,7 @@ services:
     restart: unless-stopped
 
   calendar:
-    image: hardcoreeng/calendar:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/calendar:${HULY_VERSION:-v0.7.382}
     depends_on:
       - kvs
       - mongo
@@ -844,7 +844,7 @@ services:
     restart: unless-stopped
 
   gmail:
-    image: hardcoreeng/gmail:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/gmail:${HULY_VERSION:-v0.7.382}
     depends_on:
       - kvs
     environment:
@@ -857,7 +857,7 @@ services:
     restart: unless-stopped
 
   telegram-bot:
-    image: hardcoreeng/telegram:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/telegram:${HULY_VERSION:-v0.7.382}
     depends_on:
       - mongo
     environment:
@@ -910,7 +910,7 @@ services:
     restart: unless-stopped
 
   love-agent:
-    image: hardcoreeng/love-agent:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/love-agent:${HULY_VERSION:-v0.7.382}
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     extra_hosts: ['host.docker.internal:host-gateway']
     depends_on:
@@ -1068,7 +1068,7 @@ services:
     restart: unless-stopped
 
   notification:
-    image: hardcoreeng/notification:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/notification:${HULY_VERSION:-v0.7.382}
     environment:
       - PORT=8091
       - SOURCE=notification
@@ -1078,7 +1078,7 @@ services:
     restart: unless-stopped
 
   backup:
-    image: hardcoreeng/backup:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/backup:${HULY_VERSION:-v0.7.382}
     depends_on:
       - cockroach
       - minio
@@ -1100,7 +1100,7 @@ services:
     restart: unless-stopped
 
   backup-api:
-    image: hardcoreeng/backup-api:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/backup-api:${HULY_VERSION:-v0.7.382}
     depends_on:
       - minio
       - account
@@ -1113,7 +1113,7 @@ services:
     restart: unless-stopped
 
   export:
-    image: hardcoreeng/export:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/export:${HULY_VERSION:-v0.7.382}
     depends_on:
       - cockroach
       - account
@@ -1128,7 +1128,7 @@ services:
     restart: unless-stopped
 
   sign:
-    image: hardcoreeng/sign:${HULY_VERSION:-v0.7.375}
+    image: hardcoreeng/sign:${HULY_VERSION:-v0.7.382}
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     depends_on:
       - account

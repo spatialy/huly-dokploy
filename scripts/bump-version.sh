@@ -75,13 +75,6 @@ bump_huly_in() {
   sed -i '' "s/HULY_VERSION=${old_huly}/HULY_VERSION=${new_huly}/g" "$file"
 }
 
-# Stats image uses s-prefix tags (upstream stopped publishing v-prefix after v0.7.353)
-bump_stats_in() {
-  local file="$1" new_huly="$2"
-  local new_stats="s${new_huly#v}"
-  sed -i '' "s/STATS_VERSION=s[0-9.]*/STATS_VERSION=${new_stats}/g" "$file"
-}
-
 # Update HULY_VERSION defaults in Coolify yaml (${HULY_VERSION:-vX.Y.Z} pattern)
 bump_huly_coolify_yaml() {
   local new_huly="$1"
@@ -131,13 +124,7 @@ case "${1:-status}" in
     bump_huly_in "$ENV_NEXT" "$NEW_HULY"
     bump_huly_in "$ENV_PG" "$NEW_HULY"
     bump_huly_coolify_yaml "$NEW_HULY"
-    bump_stats_in "$TOML_NEXT" "$NEW_HULY"
-    bump_stats_in "$TOML_PG" "$NEW_HULY"
-    bump_stats_in "$ENV_NEXT" "$NEW_HULY"
-    bump_stats_in "$ENV_PG" "$NEW_HULY"
-    sed -i '' "s/STATS_VERSION:-s[0-9.]*}/STATS_VERSION:-s${NEW_HULY#v}}/g" "$COOLIFY_YAML"
     echo "  HULY_VERSION -> ${NEW_HULY} (blueprints + coolify)"
-    echo "  STATS_VERSION -> s${NEW_HULY#v}"
     echo ""
     echo "Auto-bumping template patch versions..."
     bump_template "$TOML_NEXT" "patch" "huly-v7-next"

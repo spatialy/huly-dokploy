@@ -121,7 +121,7 @@ livekit_api_key    = "${password:16}"   → LIVEKIT_API_KEY
 livekit_api_secret = "${base64:32}"     → LIVEKIT_API_SECRET
 ```
 
-These feed into `[config] env` which becomes the `.env` for docker-compose. The `${HULY_VERSION}` variable pins all service image tags (`v0.7.315` for huly-v7, `v0.7.375` for huly-v7-next/huly-v7-pg). The `stats` image uses `${STATS_VERSION}` with `s`-prefix tags (upstream stopped publishing `v`-prefix for stats after v0.7.353). The `TEMPLATE_VERSION` env var tracks our template's own semver (separate from upstream Huly).
+These feed into `[config] env` which becomes the `.env` for docker-compose. The `${HULY_VERSION}` variable pins all service image tags (`v0.7.315` for huly-v7, `v0.7.382` for huly-v7-next/huly-v7-pg), including the `stats` image (which now uses `v`-prefix tags again as of v0.7.382). The `TEMPLATE_VERSION` env var tracks our template's own semver (separate from upstream Huly).
 
 ## Key Configuration
 
@@ -160,7 +160,7 @@ Two independent versions are tracked:
 | Version | What it tracks | Where it lives |
 |---------|---------------|----------------|
 | **Template version** (`v1.1.x` / `v3.1.x` / `v3.2.x`) | Our blueprint/template changes | `meta.json`, `template.toml` `TEMPLATE_VERSION` |
-| **Huly version** (`v0.7.315` / `v0.7.375`) | Upstream Docker image tags | `template.toml` `HULY_VERSION` + `STATS_VERSION`, `coolify/*/.env.example`, `coolify/huly.yaml` defaults, `meta.json` description |
+| **Huly version** (`v0.7.315` / `v0.7.382`) | Upstream Docker image tags | `template.toml` `HULY_VERSION`, `coolify/*/.env.example`, `coolify/huly.yaml` defaults, `meta.json` description |
 
 Bump the template version: `./scripts/bump-version.sh [patch|minor|major|next|pg|huly]`
 
@@ -171,7 +171,7 @@ The bump script manages `huly-v7-next` and `huly-v7-pg` (legacy `huly-v7` is lef
 **Dokploy mount behavior**: `[[config.mounts]]` content is written verbatim — `[variables]` are NOT interpolated. Use runtime entrypoint scripts with `sed` replacement (same pattern as nginx and livekit) to inject env var values into config files.
 
 ### Update Huly upstream version
-Run `./scripts/bump-version.sh huly v0.7.360` — this updates `HULY_VERSION` and `STATS_VERSION` in both `template.toml` files, both `coolify/*/.env.example` files, the `coolify/huly.yaml` inline defaults, syncs the version into `meta.json` descriptions, and auto-bumps both template patch versions.
+Run `./scripts/bump-version.sh huly v0.7.382` — this updates `HULY_VERSION` in both `template.toml` files, both `coolify/*/.env.example` files, the `coolify/huly.yaml` inline defaults, syncs the version into `meta.json` descriptions, and auto-bumps both template patch versions.
 
 ### Add/modify a service
 1. Add the service in the relevant blueprint's `docker-compose.yml` (e.g., `blueprints/huly-v7-pg/docker-compose.yml`)

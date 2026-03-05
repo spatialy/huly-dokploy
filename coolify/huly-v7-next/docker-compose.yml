@@ -302,7 +302,7 @@ services:
     restart: unless-stopped
 
   stats:
-    image: hardcoreeng/stats:${STATS_VERSION}
+    image: hardcoreeng/stats:${HULY_VERSION}
     environment:
       - PORT=4900
       - SERVER_SECRET=${SECRET}

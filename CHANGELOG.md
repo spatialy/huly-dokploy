@@ -4,6 +4,10 @@ All notable changes to this project are documented here. This project maintains 
 
 ## huly-v7-pg
 
+### v3.2.7 (2026-03-05)
+- **change**: Bump Huly upstream to v0.7.382. Card/process automation, invite settings, PostgreSQL `IN ()` syntax fix.
+- **change**: Remove `STATS_VERSION` env var — stats image now uses `v`-prefix tags again (same as `HULY_VERSION`). Upstream resumed publishing `v`-prefix for `hardcoreeng/stats` as of v0.7.382.
+
 ### v3.2.4 (2026-02-23)
 - **add**: External S3 storage support. New env vars `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION` default to bundled MinIO but can be overridden for AWS S3, Backblaze B2, Cloudflare R2, or any S3-compatible provider. Zero-config for existing users.
 - **change**: Standardize on `s3|` adapter prefix (replacing `minio|` on backup, backup-api, telegram-bot). Love already used `s3|` with MinIO.
@@ -32,6 +36,10 @@ All notable changes to this project are documented here. This project maintains 
 - Based on upstream PostgreSQL support (PR #10331, Dec 2025) included in v0.7.353.
 
 ## huly-v7-next
+
+### v3.1.7 (2026-03-05)
+- **change**: Bump Huly upstream to v0.7.382. Card/process automation, invite settings, PostgreSQL `IN ()` syntax fix.
+- **change**: Remove `STATS_VERSION` env var — stats image now uses `v`-prefix tags again (same as `HULY_VERSION`). Upstream resumed publishing `v`-prefix for `hardcoreeng/stats` as of v0.7.382.
 
 ### v3.1.4 (2026-02-23)
 - **add**: External S3 storage support. New env vars `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION` default to bundled MinIO but can be overridden for AWS S3, Backblaze B2, Cloudflare R2, or any S3-compatible provider. Zero-config for existing users.

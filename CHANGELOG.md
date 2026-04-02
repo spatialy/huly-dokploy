@@ -4,6 +4,9 @@ All notable changes to this project are documented here. This project maintains 
 
 ## huly-v7-pg
 
+### v3.2.8 (2026-04-02)
+- **fix**: Fix backup crash-loop — revert backup/backup-api from `s3|` to `minio|` storage kind. The `s3|` kind (introduced in v3.2.4) uses AWS SDK v3 which defaults to virtual-hosted-style S3 addressing, constructing unresolvable hostnames like `backups.minio` and `<workspace-uuid>.minio`. The `minio|` kind uses minio-js which always uses path-style addressing, matching the official huly-selfhost config. Telegram-bot still uses `s3|` (not actively failing).
+
 ### v3.2.7 (2026-03-05)
 - **change**: Bump Huly upstream to v0.7.382. Card/process automation, invite settings, PostgreSQL `IN ()` syntax fix.
 - **change**: Remove `STATS_VERSION` env var — stats image now uses `v`-prefix tags again (same as `HULY_VERSION`). Upstream resumed publishing `v`-prefix for `hardcoreeng/stats` as of v0.7.382.
@@ -36,6 +39,9 @@ All notable changes to this project are documented here. This project maintains 
 - Based on upstream PostgreSQL support (PR #10331, Dec 2025) included in v0.7.353.
 
 ## huly-v7-next
+
+### v3.1.8 (2026-04-02)
+- **fix**: Fix backup crash-loop — revert backup/backup-api from `s3|` to `minio|` storage kind. Same fix as huly-v7-pg v3.2.8.
 
 ### v3.1.7 (2026-03-05)
 - **change**: Bump Huly upstream to v0.7.382. Card/process automation, invite settings, PostgreSQL `IN ()` syntax fix.

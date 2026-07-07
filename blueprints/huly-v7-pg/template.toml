@@ -5,11 +5,15 @@ postgres_password = "${password:32}"
 redpanda_password = "${password:16}"
 livekit_api_key = "${password:16}"
 livekit_api_secret = "${base64:32}"
+minio_access_key = "${password:16}"
+minio_secret_key = "${password:32}"
+ai_bot_password = "${password:32}"
+sign_cert_password = "${password:16}"
 
 [config]
 env = [
   "HULY_VERSION=v0.7.382",
-  "TEMPLATE_VERSION=v3.2.8",
+  "TEMPLATE_VERSION=v3.3.0",
   "DOCKER_NAME=huly_v7",
   "HOST_ADDRESS=${main_domain}",
   "SECRET=${huly_secret}",
@@ -21,10 +25,10 @@ env = [
   "PG_PASSWORD=${postgres_password}",
   "PG_DB_URL=postgres://huly:${postgres_password}@postgres:5432/huly",
   "STORAGE_CONFIG=datalake|http://datalake:4031",
-  "# S3 / MinIO Object Storage (defaults work with bundled MinIO — change for external S3)",
+  "# S3 / MinIO Object Storage (keys auto-generated — change all four for external S3)",
   "S3_ENDPOINT=http://minio:9000",
-  "S3_ACCESS_KEY=minioadmin",
-  "S3_SECRET_KEY=minioadmin",
+  "S3_ACCESS_KEY=${minio_access_key}",
+  "S3_SECRET_KEY=${minio_secret_key}",
   "S3_REGION=us-east-1",
   "REDPANDA_ADMIN_USER=admin",
   "REDPANDA_ADMIN_PWD=${redpanda_password}",
@@ -59,6 +63,8 @@ env = [
   "OPENAI_TRANSLATE_MODEL=",
   "AI_BOT_FIRST_NAME=Huly",
   "AI_BOT_LAST_NAME=AI",
+  "# AI bot account password (auto-generated — the bot account is reachable via the public login endpoint)",
+  "AI_BOT_PASSWORD=${ai_bot_password}",
   "# Google Calendar & Gmail Integration (optional — requires Google OAuth credentials)",
   "GOOGLE_CREDENTIALS=",
   "# Telegram Bot Integration (optional — requires bot token from @BotFather)",
@@ -79,8 +85,8 @@ env = [
   "PUSH_PUBLIC_KEY=",
   "PUSH_PRIVATE_KEY=",
   "PUSH_SUBJECT=mailto:noreply@example.com",
-  "# PDF Signing certificate password (default 'password' for auto-generated self-signed cert)",
-  "SIGN_CERTIFICATE_PASSWORD=password",
+  "# PDF Signing certificate password (auto-generated, used for the self-signed cert created on first start)",
+  "SIGN_CERTIFICATE_PASSWORD=${sign_cert_password}",
 ]
 
 [[config.domains]]
@@ -121,10 +127,20 @@ exec nginx -g 'daemon off;'
 [[config.mounts]]
 filePath = "/volumes/nginx/.huly.nginx"
 content = """
+# Per-IP rate limit for the accounts endpoint (login/OTP brute-force mitigation).
+# Generous enough for normal app RPC traffic, which also flows through /_accounts.
+limit_req_zone $binary_remote_addr zone=huly_auth:10m rate=20r/s;
+
 server {
     listen 80;
     server_name _;
     client_max_body_size 0;
+
+    # Security headers (TLS terminates at the platform proxy in front of this nginx)
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
     # Docker embedded DNS - required for variable-based upstream resolution
     resolver 127.0.0.11 valid=10s;
@@ -141,6 +157,8 @@ server {
 
     # Accounts - WITH COOKIE FIXES FOR V7 SESSION PERSISTENCE
     location /_accounts {
+        limit_req zone=huly_auth burst=40 nodelay;
+
         set $upstream_account http://account:3000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -488,6 +506,7 @@ const http = require('http');
 const SERVER_SECRET = process.env.SERVER_SECRET;
 const SYSTEM_UUID = '1749089e-22e6-48de-af4e-165e18fbd2f9';
 const BOT_EMAIL = 'huly.ai.bot@hc.engineering';
+const BOT_PASSWORD = process.env.AI_BOT_PASSWORD || 'password';
 
 // --- HS256 JWT (same as Huly's jwt-simple) ---
 function b64url(buf) {
@@ -529,7 +548,7 @@ async function getToken() {
   // --- Method 1: login RPC (object params, v0.7.353 format) ---
   const r1 = await post('account', 3000, {
     method: 'login',
-    params: { email: BOT_EMAIL, password: 'password' }
+    params: { email: BOT_EMAIL, password: BOT_PASSWORD }
   });
   if (r1.result) {
     const t = typeof r1.result === 'string' ? r1.result : r1.result.token;

@@ -4,6 +4,21 @@ All notable changes to this project are documented here. This project maintains 
 
 ## huly-v7-pg
 
+### v3.3.0 (2026-07-07)
+
+Security & deployment hardening pass (PG variant only — huly-v7-next unchanged).
+
+- **security**: AI bot account password is no longer the hardcoded `password`. New auto-generated `AI_BOT_PASSWORD` template variable, wired to the aibot service and the love-agent token-generation entrypoint. The bot account (`huly.ai.bot@hc.engineering`) is reachable via the public `/_accounts` login endpoint, so a well-known password allowed anyone to authenticate as the bot. Compose falls back to `password` when the env var is unset (backward compatible with existing deployments — see note below).
+- **security**: MinIO credentials are no longer `minioadmin`/`minioadmin`. Dokploy auto-generates `S3_ACCESS_KEY`/`S3_SECRET_KEY` at deploy time; the Coolify `.env.example` now instructs generating them before first deploy. Compose keeps `minioadmin` fallbacks for existing deployments.
+- **security**: `SIGN_CERTIFICATE_PASSWORD` is auto-generated instead of defaulting to `password`.
+- **security**: nginx per-IP rate limit on `/_accounts` (20 r/s, burst 40) to mitigate login/OTP brute force, plus security headers (`Strict-Transport-Security`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`).
+- **security**: Image updates — `nginx:1.21.3` → `nginx:1.28-alpine` (2021-era image with known CVEs), `elasticsearch:7.14.2` → `7.17.28` (EOL, pre-Log4Shell), and pinned previously floating tags: `livekit/livekit-server:latest` → `v1.13.3`, `minio/minio` → `RELEASE.2025-09-07T16-13-09Z`.
+- **add**: Log rotation on all 40 services (`json-file`, 10 MB × 3 files) — prevents unbounded container logs from filling the disk. `STREAM_LOG_LEVEL` now defaults to `info` (was `debug`), overridable via env.
+- **add**: Memory limits on datastores (postgres 1G, elastic 2G, redpanda 2G, mongo 768M) so a memory spike is contained instead of OOM-killing arbitrary containers.
+- **add**: Healthchecks on `account`, `transactor`, and `front` (TCP connect via node). `datalake`, `aibot`, and `process-service` now wait for `account` to be healthy instead of merely started — fewer crash-loops on cold start.
+
+**Note for existing deployments**: the AI bot account was already created with password `password`. Setting `AI_BOT_PASSWORD` on an existing deployment does not change the stored password (and would break the love-agent login). Either keep the fallback, or reset the bot account password in the database to the new value.
+
 ### v3.2.8 (2026-04-02)
 - **fix**: Fix backup crash-loop — revert backup/backup-api from `s3|` to `minio|` storage kind. The `s3|` kind (introduced in v3.2.4) uses AWS SDK v3 which defaults to virtual-hosted-style S3 addressing, constructing unresolvable hostnames like `backups.minio` and `<workspace-uuid>.minio`. The `minio|` kind uses minio-js which always uses path-style addressing, matching the official huly-selfhost config. Telegram-bot still uses `s3|` (not actively failing).
 

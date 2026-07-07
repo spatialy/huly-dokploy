@@ -11,6 +11,7 @@ const http = require('http');
 const SERVER_SECRET = process.env.SERVER_SECRET;
 const SYSTEM_UUID = '1749089e-22e6-48de-af4e-165e18fbd2f9';
 const BOT_EMAIL = 'huly.ai.bot@hc.engineering';
+const BOT_PASSWORD = process.env.AI_BOT_PASSWORD || 'password';
 
 // --- HS256 JWT (same as Huly's jwt-simple) ---
 function b64url(buf) {
@@ -52,7 +53,7 @@ async function getToken() {
   // --- Method 1: login RPC (object params, v0.7.353 format) ---
   const r1 = await post('account', 3000, {
     method: 'login',
-    params: { email: BOT_EMAIL, password: 'password' }
+    params: { email: BOT_EMAIL, password: BOT_PASSWORD }
   });
   if (r1.result) {
     const t = typeof r1.result === 'string' ? r1.result : r1.result.token;

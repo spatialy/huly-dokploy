@@ -4,6 +4,14 @@ All notable changes to this project are documented here. This project maintains 
 
 ## huly-v7-pg
 
+### v3.5.0 (2026-07-08)
+
+Image supply-chain protection, prompted by the huly.app hosted service winding down (July 2026). Self-hosting is unaffected today — `hardcoreeng` still publishes images — but the entire stack depends on that Docker Hub org continuing to exist.
+
+- **add**: `scripts/mirror-images.sh` — mirrors all 39 images referenced by the PG compose (31 `hardcoreeng/*` + infra) to a registry you control (e.g. GHCR). Uses skopeo when available (multi-arch), falls back to docker pull/tag/push. Supports `--huly-only` and `--dry-run`.
+- **add**: `HULY_IMAGE_PREFIX` env var (default `hardcoreeng`) — all 31 Huly image references in both PG compose files now use `${HULY_IMAGE_PREFIX:-hardcoreeng}/`, so switching to a mirror (or a future community registry) is a one-variable change. Zero-config for existing deployments.
+- **docs**: README section on the upstream situation — huly.app shutdown, hosted alternatives (tracex.co, intabia.ru), the Platform-Collective fork (no own image publishing yet as of July 2026), and the migration trigger criteria for eventually switching upstreams.
+
 ### v3.4.0 (2026-07-08)
 
 Upstream sync: Huly **v0.7.382 → v0.7.426** (PG variant only — matches the version pinned by the official [huly-selfhost](https://github.com/hcengineering/huly-selfhost) as of July 2026). All 31 `hardcoreeng/*` images verified to publish the `v0.7.426` tag on Docker Hub.

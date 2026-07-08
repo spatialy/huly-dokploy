@@ -6,6 +6,30 @@ Deploys [Huly V7](https://huly.io/) — an all-in-one project management platfor
 
 ---
 
+## Upstream Status & Image Supply Chain (July 2026)
+
+The hosted **huly.app** service is winding down (shutdown expected July 20, 2026 — hosting is no longer funded). **Self-hosting is not affected**: the `hardcoreeng` Docker Hub org is still actively publishing images, and the [official self-host repo](https://github.com/hcengineering/huly-selfhost) is maintained. Hosted alternatives built on the same platform exist at [tracex.co](https://tracex.co) and [intabia.ru](https://intabia.ru).
+
+A community fork lives at [Platform-Collective/platform](https://github.com/Platform-Collective/platform) + [platform-selfhost](https://github.com/Platform-Collective/platform-selfhost), but as of July 2026 it publishes **no Docker images of its own** — its compose still pulls `hardcoreeng/*`. Migrate to the fork only when all three are true: it publishes its own images, its selfhost compose uses them, and it ships a release beyond hcengineering's last.
+
+**Protect your deployment now** — every image in this stack comes from the `hardcoreeng` Docker Hub org. If that org ever disappears, running containers keep working but any redeploy or server move fails at `docker pull`. Mirror the images to a registry you control:
+
+```bash
+docker login ghcr.io    # token needs write:packages
+./scripts/mirror-images.sh ghcr.io/youruser/huly            # everything (39 images)
+./scripts/mirror-images.sh ghcr.io/youruser/huly --dry-run  # preview first
+```
+
+Then, only if upstream images become unavailable, point your deployment at the mirror by setting one env var (huly-v7-pg v3.5.0+):
+
+```
+HULY_IMAGE_PREFIX=ghcr.io/youruser/huly
+```
+
+Re-run the mirror script after every Huly version bump so the mirror stays current.
+
+---
+
 ## Prerequisites: Get Your Server IP and Create a Domain
 
 ### Step 1: Find Your Server IP

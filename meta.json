@@ -40,7 +40,7 @@
     {
         "id": "huly-v7-pg",
         "name": "Huly V7 PG (by spatialy)",
-        "version": "v3.4.0",
+        "version": "v3.5.0",
         "description": "All-in-one project management (Huly v0.7.426, 40 services on PostgreSQL). Lighter than CockroachDB (~1.5GB less RAM). Session persistence fix, LiveKit video, AI assistant, backup, export, push notifications, PDF signing, Calendar/Gmail/Telegram integrations.",
         "logo": "huly.svg",
         "links": {

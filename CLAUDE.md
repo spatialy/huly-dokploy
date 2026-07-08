@@ -16,6 +16,7 @@ Forked from `shali1995/huly-dokploy-fucking-working`. Three blueprints are avail
 meta.json                              # Blueprint registry: huly-v7, huly-v7-next, huly-v7-pg
 README.md                              # User-facing deployment guide
 scripts/bump-version.sh                # Bump template version across all files
+scripts/mirror-images.sh               # Mirror all PG-blueprint images to a user-controlled registry
 blueprints/huly-v7/                    # Dokploy: haiodo/* v0.7.315 (legacy)
   template.toml                        # Dokploy template: variables, env, domains, mounted files
   docker-compose.yml                   # 29 services orchestration (including LiveKit)
@@ -215,6 +216,10 @@ The sidecar runs a `psql` sleep loop (default every 300s, configurable via `RECO
 ### love-agent token generation
 
 The `love-agent` service uses `hardcoreeng/love-agent` (official image). It requires a `PLATFORM_TOKEN` — a JWT containing the aibot's `personUuid`, signed with `SERVER_SECRET`. The cloud version gets this token from infrastructure; for self-hosting, a custom entrypoint script generates it at startup by logging in as the AI bot (`huly.ai.bot@hc.engineering`) via the accounts service. This follows the same entrypoint pattern used for nginx and livekit configs. If the token generation fails (e.g., accounts service unreachable), the love-agent won't start but video calls still work — only transcription is affected.
+
+## Upstream Situation (July 2026)
+
+The hosted huly.app service is winding down (hosting unfunded; shutdown ~July 20, 2026). Self-host is unaffected — `hardcoreeng` still publishes images. A community fork exists at Platform-Collective/platform + platform-selfhost but publishes **no images of its own yet** (its compose still pulls `hardcoreeng/*`). Because of this, huly-v7-pg v3.5.0+ prefixes all Huly images with `${HULY_IMAGE_PREFIX:-hardcoreeng}` and ships `scripts/mirror-images.sh` so users can mirror the stack to their own registry. Migration trigger for switching upstream to the fork: it publishes its own images AND its selfhost compose uses them AND it releases beyond hcengineering's last version.
 
 ## Upstream References
 

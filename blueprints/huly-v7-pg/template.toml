@@ -13,7 +13,11 @@ sign_cert_password = "${password:16}"
 [config]
 env = [
   "HULY_VERSION=v0.7.426",
-  "TEMPLATE_VERSION=v3.4.0",
+  "TEMPLATE_VERSION=v3.5.0",
+  "# Registry prefix for all Huly images. Default pulls from Docker Hub (hardcoreeng org).",
+  "# Point at a mirror (e.g. ghcr.io/youruser/huly) if upstream images become unavailable —",
+  "# see scripts/mirror-images.sh in the template repo.",
+  "HULY_IMAGE_PREFIX=hardcoreeng",
   "DOCKER_NAME=huly_v7",
   "HOST_ADDRESS=${main_domain}",
   "SECRET=${huly_secret}",

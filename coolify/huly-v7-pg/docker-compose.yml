@@ -135,7 +135,7 @@ services:
     logging: *default-logging
 
   rekoni:
-    image: hardcoreeng/rekoni-service:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/rekoni-service:${HULY_VERSION}
     environment:
       - SECRET=${SECRET}
     deploy:
@@ -146,7 +146,7 @@ services:
     logging: *default-logging
 
   mail:
-    image: hardcoreeng/mail:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/mail:${HULY_VERSION}
     environment:
       - PORT=8097
       - SOURCE=${MAIL_FROM:-}
@@ -162,7 +162,7 @@ services:
     logging: *default-logging
 
   print:
-    image: hardcoreeng/print:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/print:${HULY_VERSION}
     environment:
       - SECRET=${SECRET}
       - ACCOUNTS_URL=http://account:3000
@@ -172,7 +172,7 @@ services:
     logging: *default-logging
 
   github:
-    image: hardcoreeng/github:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/github:${HULY_VERSION}
     environment:
       - PORT=3500
       - STORAGE_CONFIG=${STORAGE_CONFIG:-datalake|http://datalake:4031}
@@ -191,7 +191,7 @@ services:
     logging: *default-logging
 
   transactor:
-    image: hardcoreeng/transactor:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/transactor:${HULY_VERSION}
     environment:
       - SERVER_PORT=3333
       - SERVER_SECRET=${SECRET}
@@ -216,7 +216,7 @@ services:
     logging: *default-logging
 
   collaborator:
-    image: hardcoreeng/collaborator:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/collaborator:${HULY_VERSION}
     environment:
       - COLLABORATOR_PORT=3078
       - SECRET=${SECRET}
@@ -227,7 +227,7 @@ services:
     logging: *default-logging
 
   account:
-    image: hardcoreeng/account:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/account:${HULY_VERSION}
     depends_on:
       postgres:
         condition: service_healthy
@@ -258,7 +258,7 @@ services:
     logging: *default-logging
 
   workspace:
-    image: hardcoreeng/workspace:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/workspace:${HULY_VERSION}
     environment:
       - SERVER_SECRET=${SECRET}
       - DB_URL=${PG_DB_URL}
@@ -274,7 +274,7 @@ services:
     logging: *default-logging
 
   front:
-    image: hardcoreeng/front:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/front:${HULY_VERSION}
     environment:
       - SERVER_PORT=8080
       - SERVER_SECRET=${SECRET}
@@ -324,7 +324,7 @@ services:
     logging: *default-logging
 
   datalake:
-    image: hardcoreeng/datalake:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/datalake:${HULY_VERSION}
     extra_hosts: ['host.docker.internal:host-gateway']
     depends_on:
       minio:
@@ -347,7 +347,7 @@ services:
     logging: *default-logging
 
   fulltext:
-    image: hardcoreeng/fulltext:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/fulltext:${HULY_VERSION}
     environment:
       - SERVER_SECRET=${SECRET}
       - DB_URL=${PG_DB_URL}
@@ -362,7 +362,7 @@ services:
     logging: *default-logging
 
   stats:
-    image: hardcoreeng/stats:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/stats:${HULY_VERSION}
     environment:
       - PORT=4900
       - SERVER_SECRET=${SECRET}
@@ -370,7 +370,7 @@ services:
     logging: *default-logging
 
   rating:
-    image: hardcoreeng/rating:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/rating:${HULY_VERSION}
     extra_hosts: ['host.docker.internal:host-gateway']
     depends_on:
       redpanda:
@@ -388,7 +388,7 @@ services:
     logging: *default-logging
 
   hulypulse:
-    image: hardcoreeng/hulypulse:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/hulypulse:${HULY_VERSION}
     depends_on:
       redis:
         condition: service_started
@@ -402,7 +402,7 @@ services:
     logging: *default-logging
 
   process-service:
-    image: hardcoreeng/process:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/process:${HULY_VERSION}
     extra_hosts: ['host.docker.internal:host-gateway']
     depends_on:
       redpanda:
@@ -417,7 +417,7 @@ services:
     logging: *default-logging
 
   stream:
-    image: hardcoreeng/stream:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/stream:${HULY_VERSION}
     extra_hosts: ['host.docker.internal:host-gateway']
     environment:
       - STREAM_ENDPOINT_URL=datalake://datalake:4031
@@ -434,7 +434,7 @@ services:
     logging: *default-logging
 
   media:
-    image: hardcoreeng/media:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/media:${HULY_VERSION}
     extra_hosts: ['host.docker.internal:host-gateway']
     environment:
       - ACCOUNTS_URL=http://account:3000
@@ -444,7 +444,7 @@ services:
     logging: *default-logging
 
   preview:
-    image: hardcoreeng/preview:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/preview:${HULY_VERSION}
     extra_hosts: ['host.docker.internal:host-gateway']
     environment:
       - SECRET=${SECRET}
@@ -455,7 +455,7 @@ services:
     logging: *default-logging
 
   love:
-    image: hardcoreeng/love:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/love:${HULY_VERSION}
     extra_hosts: ['host.docker.internal:host-gateway']
     environment:
       - PORT=8097
@@ -472,7 +472,7 @@ services:
     logging: *default-logging
 
   link-preview:
-    image: hardcoreeng/link-preview:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/link-preview:${HULY_VERSION}
     environment:
       - SECRET=${SECRET}
       - PORT=4041
@@ -491,7 +491,7 @@ services:
     logging: *default-logging
 
   aibot:
-    image: hardcoreeng/ai-bot:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/ai-bot:${HULY_VERSION}
     extra_hosts: ['host.docker.internal:host-gateway']
     depends_on:
       account:
@@ -521,7 +521,7 @@ services:
     logging: *default-logging
 
   kvs:
-    image: hardcoreeng/hulykvs:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/hulykvs:${HULY_VERSION}
     depends_on:
       postgres:
         condition: service_healthy
@@ -532,7 +532,7 @@ services:
     logging: *default-logging
 
   calendar:
-    image: hardcoreeng/calendar:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/calendar:${HULY_VERSION}
     depends_on:
       - kvs
       - mongo
@@ -549,7 +549,7 @@ services:
     logging: *default-logging
 
   gmail:
-    image: hardcoreeng/gmail:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/gmail:${HULY_VERSION}
     depends_on:
       - kvs
     environment:
@@ -563,7 +563,7 @@ services:
     logging: *default-logging
 
   telegram-bot:
-    image: hardcoreeng/telegram-bot:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/telegram-bot:${HULY_VERSION}
     depends_on:
       postgres:
         condition: service_started
@@ -595,7 +595,7 @@ services:
     logging: *default-logging
 
   love-agent:
-    image: hardcoreeng/love-agent:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/love-agent:${HULY_VERSION}
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     extra_hosts: ['host.docker.internal:host-gateway']
     depends_on:
@@ -621,7 +621,7 @@ services:
     logging: *default-logging
 
   notification:
-    image: hardcoreeng/notification:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/notification:${HULY_VERSION}
     environment:
       - PORT=8091
       - SOURCE=notification
@@ -632,7 +632,7 @@ services:
     logging: *default-logging
 
   backup:
-    image: hardcoreeng/backup:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/backup:${HULY_VERSION}
     depends_on:
       postgres:
         condition: service_started
@@ -658,7 +658,7 @@ services:
     logging: *default-logging
 
   backup-api:
-    image: hardcoreeng/backup-api:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/backup-api:${HULY_VERSION}
     depends_on:
       - minio
       - account
@@ -672,7 +672,7 @@ services:
     logging: *default-logging
 
   export:
-    image: hardcoreeng/export:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/export:${HULY_VERSION}
     depends_on:
       postgres:
         condition: service_started
@@ -690,7 +690,7 @@ services:
     logging: *default-logging
 
   sign:
-    image: hardcoreeng/sign:${HULY_VERSION}
+    image: ${HULY_IMAGE_PREFIX:-hardcoreeng}/sign:${HULY_VERSION}
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     depends_on:
       - account

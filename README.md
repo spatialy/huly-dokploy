@@ -15,9 +15,13 @@ A community fork lives at [Platform-Collective/platform](https://github.com/Plat
 **Protect your deployment now** — every image in this stack comes from the `hardcoreeng` Docker Hub org. If that org ever disappears, running containers keep working but any redeploy or server move fails at `docker pull`. Mirror the images to a registry you control:
 
 ```bash
-docker login ghcr.io    # token needs write:packages
-./scripts/mirror-images.sh ghcr.io/youruser/huly            # everything (39 images)
-./scripts/mirror-images.sh ghcr.io/youruser/huly --dry-run  # preview first
+# Install skopeo first (recommended): no local disk usage, copies all architectures.
+skopeo login ghcr.io      # GHCR token needs write:packages
+skopeo login docker.io    # free Docker Hub account — anonymous pulls (100/6h per IP)
+                          # are NOT enough for a full mirror run (~120 manifest pulls)
+./scripts/mirror-images.sh ghcr.io/youruser/huly                  # everything (39 images)
+./scripts/mirror-images.sh ghcr.io/youruser/huly --dry-run        # preview first
+./scripts/mirror-images.sh ghcr.io/youruser/huly --skip-existing  # resume an interrupted run
 ```
 
 Then, only if upstream images become unavailable, point your deployment at the mirror by setting one env var (huly-v7-pg v3.5.0+):

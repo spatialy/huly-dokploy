@@ -24,13 +24,23 @@ skopeo login docker.io    # free Docker Hub account — anonymous pulls (100/6h 
 ./scripts/mirror-images.sh ghcr.io/youruser/huly --skip-existing  # resume an interrupted run
 ```
 
+**GHCR creates every new package private by default**, even though the source images are public on Docker Hub — this costs nothing to fix, but private packages need a GHCR login on every server and could someday fall under paid tiers, while public packages stay free indefinitely. Set `GH_TOKEN` to a [personal access token](https://github.com/settings/tokens) (classic: `read:packages` + `write:packages`; fine-grained: "Packages" read-and-write) and add `--public`:
+
+```bash
+export GH_TOKEN=ghp_...
+./scripts/mirror-images.sh ghcr.io/youruser/huly --public              # mirror + make public
+./scripts/mirror-images.sh ghcr.io/youruser/huly --visibility-only     # already mirrored? just fix visibility
+```
+
+If `youruser` is a GitHub organization rather than a personal account, add `--org` too.
+
 Then, only if upstream images become unavailable, point your deployment at the mirror by setting one env var (huly-v7-pg v3.5.0+):
 
 ```
 HULY_IMAGE_PREFIX=ghcr.io/youruser/huly
 ```
 
-Re-run the mirror script after every Huly version bump so the mirror stays current.
+Re-run the mirror script (with `--skip-existing --public`) after every Huly version bump so the mirror stays current.
 
 ---
 

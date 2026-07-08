@@ -34,6 +34,8 @@ export GH_TOKEN=ghp_...
 
 If `youruser` is a GitHub organization rather than a personal account, add `--org` too.
 
+> **Known GitHub API limitation:** because these images are mirrored under a path (`ghcr.io/youruser/huly/<name>`), each package name contains a slash. GitHub's REST API can read these fine, but the visibility-change endpoint 404s on slash-containing package names — confirmed by testing GET (200) vs PATCH (404) against the identical URL and token. This is a platform-side bug/gap, not something `--public` can work around. When it happens, the script prints a one-time explanation plus a direct link per package; visiting each link and clicking **Package settings → Change visibility → Public** is the only fix. Because GHCR visibility is a package-level setting (not per-tag), **this is one-time** — future `--skip-existing --public` reruns push new tags to the same package names and don't reset visibility. Only a genuinely new image name (e.g. a service added to the compose later) would default to private again.
+
 Then, only if upstream images become unavailable, point your deployment at the mirror by setting one env var (huly-v7-pg v3.5.0+):
 
 ```

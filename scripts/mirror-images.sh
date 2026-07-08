@@ -7,15 +7,23 @@
 # move would otherwise fail at `docker pull`.
 #
 # Usage:
-#   ./scripts/mirror-images.sh <target>                 # mirror everything
-#   ./scripts/mirror-images.sh <target> --huly-only     # only hardcoreeng/* images
-#   ./scripts/mirror-images.sh <target> --dry-run       # print the plan, copy nothing
+#   ./scripts/mirror-images.sh <target>                   # mirror everything
+#   ./scripts/mirror-images.sh <target> --huly-only       # only hardcoreeng/* images
+#   ./scripts/mirror-images.sh <target> --dry-run         # print the plan, copy nothing
+#   ./scripts/mirror-images.sh <target> --skip-existing   # resume: skip images already
+#                                                         # mirrored with matching digest
 #
 #   <target> is a registry/namespace you own, e.g. ghcr.io/youruser/huly
 #
-# Authenticate first:
-#   docker login ghcr.io        (or: skopeo login ghcr.io)
-#   GHCR token needs the `write:packages` scope.
+# Authenticate to BOTH ends first:
+#   skopeo login ghcr.io          (or: docker login ghcr.io — write:packages scope)
+#   skopeo login docker.io        (or: docker login — free Docker Hub account)
+#
+# Docker Hub rate limits: anonymous pulls are capped at 100/6h per IP, and a full
+# multi-arch mirror needs ~120 manifest pulls. A free authenticated Docker Hub
+# account (200 pulls/6h) fits a full run; if a run is interrupted by the limit,
+# wait for the window and resume with --skip-existing (it verifies against the
+# mirror first, so already-copied images cost no Docker Hub pulls).
 #
 # Uses skopeo when available (copies all architectures without local disk),
 # otherwise falls back to docker pull/tag/push. Strongly prefer skopeo:
@@ -35,10 +43,12 @@ TARGET="${1:?Usage: $0 <target-registry/namespace> [--huly-only] [--dry-run]}"
 shift
 HULY_ONLY=false
 DRY_RUN=false
+SKIP_EXISTING=false
 for arg in "$@"; do
   case "$arg" in
-    --huly-only) HULY_ONLY=true ;;
-    --dry-run)   DRY_RUN=true ;;
+    --huly-only)     HULY_ONLY=true ;;
+    --dry-run)       DRY_RUN=true ;;
+    --skip-existing) SKIP_EXISTING=true ;;
     *) echo "Unknown flag: $arg" >&2; exit 1 ;;
   esac
 done
@@ -77,6 +87,7 @@ if command -v skopeo >/dev/null 2>&1; then
 elif [ "$DRY_RUN" = false ]; then
   command -v docker >/dev/null 2>&1 || { echo "Need skopeo or docker installed." >&2; exit 1; }
   echo "skopeo not found — falling back to docker pull/tag/push (host architecture only)."
+  [ "$SKIP_EXISTING" = true ] && echo "Note: --skip-existing requires skopeo — ignored; everything will be re-copied."
 fi
 echo
 
@@ -101,8 +112,22 @@ for src in $IMAGES; do
   echo "==> ${src_ref}  ->  ${dst}"
   [ "$DRY_RUN" = true ] && continue
 
+  # Resume support: skip when the mirror already holds this exact manifest.
+  # Checks the destination (GHCR) first so skipped images cost zero Docker Hub
+  # pulls; only consults the source digest when the destination tag exists.
+  if [ "$SKIP_EXISTING" = true ] && [ "$USE_SKOPEO" = true ]; then
+    dst_digest=$(skopeo inspect --format '{{.Digest}}' "docker://${dst}" 2>/dev/null || true)
+    if [ -n "$dst_digest" ]; then
+      src_digest=$(skopeo inspect --format '{{.Digest}}' "docker://${src_ref}" 2>/dev/null || true)
+      if [ -n "$src_digest" ] && [ "$src_digest" = "$dst_digest" ]; then
+        echo "    already mirrored (digest match) — skipping"
+        continue
+      fi
+    fi
+  fi
+
   if [ "$USE_SKOPEO" = true ]; then
-    skopeo copy --all "docker://${src_ref}" "docker://${dst}" || FAILED="${FAILED} ${src}"
+    skopeo copy --all --retry-times 3 "docker://${src_ref}" "docker://${dst}" || FAILED="${FAILED} ${src}"
   else
     # Remove each image locally after pushing — the full stack unpacks to 15-20 GB
     # and fills /var/lib/docker (or the Docker Desktop VM disk) otherwise.

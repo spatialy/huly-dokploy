@@ -4,6 +4,18 @@ All notable changes to this project are documented here. This project maintains 
 
 ## huly-v7-pg
 
+### v3.4.0 (2026-07-08)
+
+Upstream sync: Huly **v0.7.382 → v0.7.426** (PG variant only — matches the version pinned by the official [huly-selfhost](https://github.com/hcengineering/huly-selfhost) as of July 2026). All 31 `hardcoreeng/*` images verified to publish the `v0.7.426` tag on Docker Hub.
+
+- **change**: Bump `HULY_VERSION` to v0.7.426 in `template.toml` and `coolify/huly-v7-pg/.env.example`.
+- **add**: `DISABLED_FEATURES=auto-translate,mailboxes` on the `front` service — mirrors the official self-host compose, which disables these cloud-only UI features. Overridable via env.
+- **add**: `HULY_BACKEND=redis` on `hulypulse` — upstream's newer hulypulse defaults to an in-memory backend unless told to use Redis; the existing `HULY_REDIS_URLS`/`HULY_REDIS_MODE` vars are kept.
+- **kept**: `pg-jobs` reconciliation sidecar — upstream [PR #10527](https://github.com/hcengineering/platform/pull/10527) (meeting-minutes counter fix) is still open as of this release, so the workaround remains necessary.
+- **kept**: `DESKTOP_UPDATES_CHANNEL=selfhost` — upstream now sets the channel to the version number (`0.7.426`); not adopted, pending clarity on the channel semantics for desktop clients.
+- **note**: nginx route audit against the official `.huly.nginx` found no new public routes; ours remain a superset.
+- **note**: the blueprints now track different upstream versions (pg: v0.7.426, next: v0.7.382). `bump-version.sh huly` updates both to the same version — bump a single blueprint manually while they stay diverged.
+
 ### v3.3.0 (2026-07-07)
 
 Security & deployment hardening pass (PG variant only — huly-v7-next unchanged).

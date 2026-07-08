@@ -299,6 +299,7 @@ services:
       - LAST_NAME_FIRST=${LAST_NAME_FIRST:-true}
       - DISABLE_SIGNUP=${DISABLE_SIGNUP:-false}
       - DESKTOP_UPDATES_CHANNEL=selfhost
+      - DISABLED_FEATURES=${DISABLED_FEATURES:-auto-translate,mailboxes}
       - PULSE_URL=wss://${HOST_ADDRESS}/_pulse
       - STREAM_URL=https://${HOST_ADDRESS}/_stream/recording
       - PREVIEW_URL=https://${HOST_ADDRESS}/_preview
@@ -395,6 +396,7 @@ services:
         condition: service_started
     environment:
       - HULY_TOKEN_SECRET=${SECRET}
+      - HULY_BACKEND=redis
       - HULY_REDIS_URLS=redis://redis:6379
       - HULY_BIND_PORT=8098
       - HULY_REDIS_MODE=direct

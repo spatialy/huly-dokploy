@@ -45,6 +45,19 @@
 # If <target>'s owner is a GitHub organization (not a personal account), also
 # pass --org.
 #
+# KNOWN GITHUB API LIMITATION: because this mirror nests images under a path
+# (ghcr.io/owner/prefix/name), each package name contains a slash (e.g.
+# "prefix/name"). GitHub's REST API can read these fine (GET/LIST), but the
+# PATCH endpoint used to change visibility 404s on slash-containing package
+# names regardless of encoding — confirmed by testing GET and PATCH against
+# the identical URL with the identical token (GET: 200, PATCH: 404). This is a
+# platform-side asymmetry, not fixable from here. --public/--visibility-only
+# will print a one-time explanation and a list of direct package-settings
+# links the first time this happens; visibility must be set once by hand for
+# each package via the linked page. Because GHCR visibility is a package-level
+# setting (not per-tag), this is a ONE-TIME fix — future --skip-existing
+# reruns push new tags to the same package names and do not reset visibility.
+#
 # After mirroring, point a deployment at the mirror by setting:
 #   HULY_IMAGE_PREFIX=ghcr.io/youruser/huly
 # This switches all hardcoreeng/* images. Infra images (nginx, postgres, redis,
@@ -103,12 +116,20 @@ if [ "$SET_PUBLIC" = true ]; then
 fi
 
 # Sets a GHCR package to public via the GitHub API. $1 = image name (no tag).
+# Known limitation: this PATCH 404s for slash-containing package names (see
+# header comment) — on the first such failure we print a one-time explanation
+# instead of repeating it for every package, and collect direct links for the
+# manual one-time fix.
 set_package_public() {
   local image="$1"
   local pkg_name="${GHCR_PREFIX:+${GHCR_PREFIX}/}${image}"
   local pkg_encoded="${pkg_name//\//%2F}"
   local api_base="https://api.github.com/user/packages"
-  [ "$IS_ORG" = true ] && api_base="https://api.github.com/orgs/${GHCR_OWNER}/packages"
+  local web_base="https://github.com/users/${GHCR_OWNER}/packages"
+  if [ "$IS_ORG" = true ]; then
+    api_base="https://api.github.com/orgs/${GHCR_OWNER}/packages"
+    web_base="https://github.com/orgs/${GHCR_OWNER}/packages"
+  fi
 
   local http_code
   http_code=$(curl -sS -o /tmp/ghcr-visibility-resp.$$ -w '%{http_code}' -X PATCH \
@@ -120,6 +141,25 @@ set_package_public() {
 
   if [ "$http_code" = "200" ] || [ "$http_code" = "204" ]; then
     echo "    -> public"
+  elif [ "$http_code" = "404" ] && [[ "$pkg_name" == */* ]]; then
+    if [ "$VISIBILITY_WARNED" = false ]; then
+      VISIBILITY_WARNED=true
+      cat >&2 <<'EOF'
+    -> FAILED to set public (HTTP 404)
+
+    NOTE: this is a known GitHub API limitation, not a script bug — GitHub's
+    PATCH endpoint for package visibility 404s on slash-containing package
+    names (nested paths like "prefix/name"), even though GET/list work fine
+    on the identical resource. This has been confirmed by testing GET vs
+    PATCH on the same URL with the same token.
+
+    Fix once, by hand, via the links printed at the end of this run — GHCR
+    visibility is a package-level setting, so this does not need repeating
+    on future mirror runs for the same package names.
+EOF
+    fi
+    VISIBILITY_FAILED="${VISIBILITY_FAILED} ${pkg_name}"
+    VISIBILITY_LINKS="${VISIBILITY_LINKS}\n  ${web_base}/container/package/${pkg_encoded}"
   else
     echo "    -> FAILED to set public (HTTP ${http_code}): $(cat /tmp/ghcr-visibility-resp.$$ 2>/dev/null | head -c 200)" >&2
     VISIBILITY_FAILED="${VISIBILITY_FAILED} ${pkg_name}"
@@ -127,6 +167,8 @@ set_package_public() {
   rm -f /tmp/ghcr-visibility-resp.$$
 }
 VISIBILITY_FAILED=""
+VISIBILITY_LINKS=""
+VISIBILITY_WARNED=false
 
 COMPOSE="coolify/huly-v7-pg/docker-compose.yml"
 ENV_EXAMPLE="coolify/huly-v7-pg/.env.example"
@@ -237,16 +279,29 @@ if [ -n "$FAILED" ]; then
   echo "FAILED to mirror:${FAILED}" >&2
   exit 1
 fi
-if [ -n "$VISIBILITY_FAILED" ]; then
+
+if [ -n "$VISIBILITY_LINKS" ]; then
+  echo "Visibility could not be set via the API for these packages (see NOTE above)." >&2
+  echo "Fix once, by hand — visit each link and change visibility to Public:" >&2
+  echo -e "${VISIBILITY_LINKS}" >&2
+  echo >&2
+elif [ -n "$VISIBILITY_FAILED" ]; then
   echo "FAILED to set public:${VISIBILITY_FAILED}" >&2
   exit 1
 fi
+
 if [ "$DRY_RUN" = true ]; then
   echo "Dry run complete — nothing copied."
 elif [ "$VISIBILITY_ONLY" = true ]; then
+  if [ -n "$VISIBILITY_LINKS" ]; then
+    echo "Packages are mirrored but some need the manual visibility fix above." >&2
+    exit 1
+  fi
   echo "Done. ${COUNT} packages set to public in ${TARGET}."
 else
   echo "Done. ${COUNT} images mirrored to ${TARGET}."
-  [ "$SET_PUBLIC" = true ] && echo "All packages set to public."
+  if [ "$SET_PUBLIC" = true ] && [ -z "$VISIBILITY_LINKS" ]; then
+    echo "All packages set to public."
+  fi
   echo "Point deployments at the mirror with: HULY_IMAGE_PREFIX=${TARGET}"
 fi

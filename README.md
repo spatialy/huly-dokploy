@@ -603,9 +603,11 @@ By default, Huly uses the bundled **MinIO** container for S3-compatible object s
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `S3_ENDPOINT` | `http://minio:9000` | S3 endpoint URL |
-| `S3_ACCESS_KEY` | `minioadmin` | Access key / username |
-| `S3_SECRET_KEY` | `minioadmin` | Secret key / password |
+| `S3_ACCESS_KEY` | auto-generated (V7 PG) / `minioadmin` (V7 Next) | Access key / username |
+| `S3_SECRET_KEY` | auto-generated (V7 PG) / `minioadmin` (V7 Next) | Secret key / password |
 | `S3_REGION` | `us-east-1` | S3 region |
+
+> Since V7 PG v3.3.0, Dokploy auto-generates the MinIO credentials at deploy time (they become the MinIO root user/password). For Coolify/compose deployments, generate them in your `.env` before first deploy — see `.env.example`.
 
 **Examples:**
 

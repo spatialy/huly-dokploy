@@ -1,6 +1,12 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   nginx:
-    image: "nginx:1.21.3"
+    image: "nginx:1.28-alpine"
     ports:
       - 80
     volumes:
@@ -10,9 +16,14 @@ services:
     environment:
       - HOST_ADDRESS=${HOST_ADDRESS}
     restart: unless-stopped
+    logging: *default-logging
 
   postgres:
     image: postgres:17-alpine
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     environment:
       - POSTGRES_DB=${PG_DATABASE}
       - POSTGRES_USER=${PG_USERNAME}
@@ -25,6 +36,7 @@ services:
       timeout: 5s
       retries: 10
     restart: unless-stopped
+    logging: *default-logging
 
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v25.2.11
@@ -45,15 +57,20 @@ services:
     environment:
       - REDPANDA_SUPERUSER_USERNAME=${REDPANDA_ADMIN_USER}
       - REDPANDA_SUPERUSER_PASSWORD=${REDPANDA_ADMIN_PWD}
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     healthcheck:
       test: ["CMD", "rpk", "cluster", "info", "-X", "user=${REDPANDA_ADMIN_USER}", "-X", "pass=${REDPANDA_ADMIN_PWD}"]
       interval: 10s
       timeout: 5s
       retries: 10
     restart: unless-stopped
+    logging: *default-logging
 
   minio:
-    image: "minio/minio"
+    image: "minio/minio:RELEASE.2025-09-07T16-13-09Z"
     command: server /data --address ":9000" --console-address ":9001"
     environment:
       - MINIO_ROOT_USER=${S3_ACCESS_KEY:-minioadmin}
@@ -65,9 +82,14 @@ services:
       interval: 5s
       retries: 10
     restart: unless-stopped
+    logging: *default-logging
 
   elastic:
-    image: "elasticsearch:7.14.2"
+    image: "elasticsearch:7.17.28"
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     command: |
       /bin/sh -c "./bin/elasticsearch-plugin list | grep -q ingest-attachment || yes | ./bin/elasticsearch-plugin install --silent ingest-attachment;
       /usr/local/bin/docker-entrypoint.sh eswrapper"
@@ -85,13 +107,15 @@ services:
       retries: 10
       test: curl -s http://localhost:9200/_cluster/health | grep -vq '"status":"red"'
     restart: unless-stopped
+    logging: *default-logging
 
   redis:
     image: redis:8.0.2-alpine3.21
     restart: unless-stopped
+    logging: *default-logging
 
   livekit:
-    image: livekit/livekit-server:latest
+    image: livekit/livekit-server:v1.13.3
     entrypoint: ["/bin/sh", "/entrypoint.sh"]
     depends_on:
       redis:
@@ -108,6 +132,7 @@ services:
       - ./volumes/livekit/livekit.yaml:/etc/livekit.template:ro
       - ./volumes/livekit/entrypoint.sh:/entrypoint.sh
     restart: unless-stopped
+    logging: *default-logging
 
   rekoni:
     image: hardcoreeng/rekoni-service:${HULY_VERSION}
@@ -118,6 +143,7 @@ services:
         limits:
           memory: 500M
     restart: unless-stopped
+    logging: *default-logging
 
   mail:
     image: hardcoreeng/mail:${HULY_VERSION}
@@ -133,6 +159,7 @@ services:
       - SES_SECRET_KEY=${SES_SECRET_KEY:-}
       - SES_REGION=${SES_REGION:-}
     restart: unless-stopped
+    logging: *default-logging
 
   print:
     image: hardcoreeng/print:${HULY_VERSION}
@@ -142,6 +169,7 @@ services:
       - STORAGE_CONFIG=${STORAGE_CONFIG:-datalake|http://datalake:4031}
       - STATS_URL=http://stats:4900
     restart: unless-stopped
+    logging: *default-logging
 
   github:
     image: hardcoreeng/github:${HULY_VERSION}
@@ -160,6 +188,7 @@ services:
       - FRONT_URL=https://${HOST_ADDRESS}
       - BOT_NAME=${GITHUB_BOT_NAME:-}
     restart: unless-stopped
+    logging: *default-logging
 
   transactor:
     image: hardcoreeng/transactor:${HULY_VERSION}
@@ -177,7 +206,14 @@ services:
       - MAIL_URL=http://mail:8097
       - AI_BOT_URL=http://aibot:4010
       - WEB_PUSH_URL=http://notification:8091
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(3333,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     restart: unless-stopped
+    logging: *default-logging
 
   collaborator:
     image: hardcoreeng/collaborator:${HULY_VERSION}
@@ -188,6 +224,7 @@ services:
       - STATS_URL=http://stats:4900
       - STORAGE_CONFIG=${STORAGE_CONFIG:-datalake|http://datalake:4031}
     restart: unless-stopped
+    logging: *default-logging
 
   account:
     image: hardcoreeng/account:${HULY_VERSION}
@@ -211,7 +248,14 @@ services:
       - ACCOUNT_PORT=3000
       - QUEUE_CONFIG=redpanda:9092
       - MAIL_URL=http://mail:8097
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(3000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     restart: unless-stopped
+    logging: *default-logging
 
   workspace:
     image: hardcoreeng/workspace:${HULY_VERSION}
@@ -227,6 +271,7 @@ services:
       - ACCOUNTS_DB_URL=${PG_DB_URL}
       - INIT_REPO_DIR=${INIT_REPO_DIR:-/nonexistent}
     restart: unless-stopped
+    logging: *default-logging
 
   front:
     image: hardcoreeng/front:${HULY_VERSION}
@@ -268,7 +313,14 @@ services:
       - BACKUP_URL=https://${HOST_ADDRESS}/_backup/api/backup
       - EXPORT_URL=https://${HOST_ADDRESS}/_export
       - SIGN_URL=https://${HOST_ADDRESS}/_sign
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(8080,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
     restart: unless-stopped
+    logging: *default-logging
 
   datalake:
     image: hardcoreeng/datalake:${HULY_VERSION}
@@ -281,7 +333,7 @@ services:
       stats:
         condition: service_started
       account:
-        condition: service_started
+        condition: service_healthy
     environment:
       - PORT=4031
       - SECRET=${SECRET}
@@ -291,6 +343,7 @@ services:
       - BUCKETS=blobs,eu|${S3_ENDPOINT:-http://minio:9000}?accessKey=${S3_ACCESS_KEY:-minioadmin}&secretKey=${S3_SECRET_KEY:-minioadmin}&region=${S3_REGION:-us-east-1}
       - QUEUE_CONFIG=redpanda:9092
     restart: unless-stopped
+    logging: *default-logging
 
   fulltext:
     image: hardcoreeng/fulltext:${HULY_VERSION}
@@ -305,6 +358,7 @@ services:
       - STATS_URL=http://stats:4900
       - QUEUE_CONFIG=redpanda:9092
     restart: unless-stopped
+    logging: *default-logging
 
   stats:
     image: hardcoreeng/stats:${HULY_VERSION}
@@ -312,6 +366,7 @@ services:
       - PORT=4900
       - SERVER_SECRET=${SECRET}
     restart: unless-stopped
+    logging: *default-logging
 
   rating:
     image: hardcoreeng/rating:${HULY_VERSION}
@@ -329,6 +384,7 @@ services:
       - COMMUNICATION_TIME_LOGGING_ENABLED=true
       - COMMUNICATION_API_ENABLED=false
     restart: unless-stopped
+    logging: *default-logging
 
   hulypulse:
     image: hardcoreeng/hulypulse:${HULY_VERSION}
@@ -341,6 +397,7 @@ services:
       - HULY_BIND_PORT=8098
       - HULY_REDIS_MODE=direct
     restart: unless-stopped
+    logging: *default-logging
 
   process-service:
     image: hardcoreeng/process:${HULY_VERSION}
@@ -349,12 +406,13 @@ services:
       redpanda:
         condition: service_started
       account:
-        condition: service_started
+        condition: service_healthy
     environment:
       - SECRET=${SECRET}
       - ACCOUNTS_URL=http://account:3000
       - QUEUE_CONFIG=redpanda:9092
     restart: unless-stopped
+    logging: *default-logging
 
   stream:
     image: hardcoreeng/stream:${HULY_VERSION}
@@ -366,11 +424,12 @@ services:
       - STREAM_SERVE_URL=0.0.0.0:1081
       - STREAM_BASE_URL=https://${HOST_ADDRESS}/_stream
       - STREAM_MAX_PARALLEL_SCALING_COUNT=2
-      - STREAM_LOG_LEVEL=debug
+      - STREAM_LOG_LEVEL=${STREAM_LOG_LEVEL:-info}
       - AWS_ACCESS_KEY_ID=${S3_ACCESS_KEY:-minioadmin}
       - AWS_SECRET_ACCESS_KEY=${S3_SECRET_KEY:-minioadmin}
       - STREAM_QUEUE_CONFIG=redpanda:9092
     restart: unless-stopped
+    logging: *default-logging
 
   media:
     image: hardcoreeng/media:${HULY_VERSION}
@@ -380,6 +439,7 @@ services:
       - SECRET=${SECRET}
       - QUEUE_CONFIG=redpanda:9092
     restart: unless-stopped
+    logging: *default-logging
 
   preview:
     image: hardcoreeng/preview:${HULY_VERSION}
@@ -390,6 +450,7 @@ services:
       - CACHE_PATH=/data/cache
       - PORT=4043
     restart: unless-stopped
+    logging: *default-logging
 
   love:
     image: hardcoreeng/love:${HULY_VERSION}
@@ -406,6 +467,7 @@ services:
       - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
     restart: unless-stopped
+    logging: *default-logging
 
   link-preview:
     image: hardcoreeng/link-preview:${HULY_VERSION}
@@ -413,19 +475,27 @@ services:
       - SECRET=${SECRET}
       - PORT=4041
     restart: unless-stopped
+    logging: *default-logging
 
   mongo:
     image: mongo:7-jammy
+    deploy:
+      resources:
+        limits:
+          memory: 768M
     volumes:
       - mongo_data:/data/db
     restart: unless-stopped
+    logging: *default-logging
 
   aibot:
     image: hardcoreeng/ai-bot:${HULY_VERSION}
     extra_hosts: ['host.docker.internal:host-gateway']
     depends_on:
-      - account
-      - mongo
+      account:
+        condition: service_healthy
+      mongo:
+        condition: service_started
     environment:
       - PORT=4010
       - SERVER_SECRET=${SECRET}
@@ -435,7 +505,7 @@ services:
       - STORAGE_CONFIG=${STORAGE_CONFIG:-datalake|http://datalake:4031}
       - FIRST_NAME=${AI_BOT_FIRST_NAME:-Huly}
       - LAST_NAME=${AI_BOT_LAST_NAME:-AI}
-      - PASSWORD=password
+      - PASSWORD=${AI_BOT_PASSWORD:-password}
       - AVATAR_PATH=./avatar.png
       - AVATAR_CONTENT_TYPE=image/png
       - STATS_URL=http://stats:4900
@@ -446,6 +516,7 @@ services:
       - OPENAI_SUMMARY_MODEL=${OPENAI_SUMMARY_MODEL:-}
       - OPENAI_TRANSLATE_MODEL=${OPENAI_TRANSLATE_MODEL:-}
     restart: unless-stopped
+    logging: *default-logging
 
   kvs:
     image: hardcoreeng/hulykvs:${HULY_VERSION}
@@ -456,6 +527,7 @@ services:
       - HULY_DB_CONNECTION=${PG_DB_URL}
       - HULY_TOKEN_SECRET=${SECRET}
     restart: unless-stopped
+    logging: *default-logging
 
   calendar:
     image: hardcoreeng/calendar:${HULY_VERSION}
@@ -472,6 +544,7 @@ services:
       - CREDENTIALS=${GOOGLE_CREDENTIALS:-}
       - WATCH_URL=https://${HOST_ADDRESS}/_calendar
     restart: unless-stopped
+    logging: *default-logging
 
   gmail:
     image: hardcoreeng/gmail:${HULY_VERSION}
@@ -485,6 +558,7 @@ services:
       - QUEUE_CONFIG=redpanda:9092
       - CREDENTIALS=${GOOGLE_CREDENTIALS:-}
     restart: unless-stopped
+    logging: *default-logging
 
   telegram-bot:
     image: hardcoreeng/telegram-bot:${HULY_VERSION}
@@ -502,6 +576,7 @@ services:
       - QUEUE_CONFIG=redpanda:9092
       - QUEUE_REGION=
     restart: unless-stopped
+    logging: *default-logging
 
   pg-jobs:
     image: postgres:17-alpine
@@ -515,6 +590,7 @@ services:
     volumes:
       - ./volumes/pg-jobs/reconcile.sh:/reconcile.sh:ro
     restart: unless-stopped
+    logging: *default-logging
 
   love-agent:
     image: hardcoreeng/love-agent:${HULY_VERSION}
@@ -527,6 +603,7 @@ services:
     environment:
       - SERVER_SECRET=${SECRET}
       - ACCOUNTS_URL=http://account:3000
+      - AI_BOT_PASSWORD=${AI_BOT_PASSWORD:-}
       - PLATFORM_URL=http://aibot:4010
       - LIVEKIT_URL=ws://livekit:7880
       - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
@@ -539,6 +616,7 @@ services:
     volumes:
       - ./volumes/love-agent/entrypoint.sh:/entrypoint.sh
     restart: unless-stopped
+    logging: *default-logging
 
   notification:
     image: hardcoreeng/notification:${HULY_VERSION}
@@ -549,6 +627,7 @@ services:
       - PUSH_PRIVATE_KEY=${PUSH_PRIVATE_KEY:-}
       - PUSH_SUBJECT=${PUSH_SUBJECT:-mailto:noreply@example.com}
     restart: unless-stopped
+    logging: *default-logging
 
   backup:
     image: hardcoreeng/backup:${HULY_VERSION}
@@ -574,6 +653,7 @@ services:
       - KEEP_SNAPSHOTS=84
       - QUEUE_CONFIG=redpanda:9092
     restart: unless-stopped
+    logging: *default-logging
 
   backup-api:
     image: hardcoreeng/backup-api:${HULY_VERSION}
@@ -587,6 +667,7 @@ services:
       - BUCKET_NAME=backups
       - STORAGE=minio|minio?accessKey=${S3_ACCESS_KEY:-minioadmin}&secretKey=${S3_SECRET_KEY:-minioadmin}
     restart: unless-stopped
+    logging: *default-logging
 
   export:
     image: hardcoreeng/export:${HULY_VERSION}
@@ -604,6 +685,7 @@ services:
       - ACCOUNTS_URL=http://account:3000
       - STATS_URL=http://stats:4900
     restart: unless-stopped
+    logging: *default-logging
 
   sign:
     image: hardcoreeng/sign:${HULY_VERSION}
@@ -624,6 +706,7 @@ services:
       - sign_cert:/var/cfg
       - ./volumes/sign/entrypoint.sh:/entrypoint.sh
     restart: unless-stopped
+    logging: *default-logging
 
 volumes:
   pg_data:

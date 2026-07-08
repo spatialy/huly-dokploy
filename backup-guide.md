@@ -204,6 +204,25 @@ The built-in backup service handles routine point-in-time recovery. The `pg_dump
 
 ---
 
+## Offsite Replication (strongly recommended)
+
+By default the `backups` bucket lives in the bundled MinIO on the **same disk** as the data it protects — a disk failure or compromised host loses data and backups together, and 84 hourly snapshots only cover ~3.5 days. Get a copy off the server:
+
+**Option A — mirror the backups bucket to external S3** (Backblaze B2, Cloudflare R2, Wasabi, AWS):
+
+```bash
+# One-shot (add to cron on the host, e.g. daily):
+docker run --rm --network <project>_default -e MC_HOST_src="http://$S3_ACCESS_KEY:$S3_SECRET_KEY@minio:9000" \
+  -e MC_HOST_dst="https://<key>:<secret>@s3.us-west-004.backblazeb2.com" \
+  minio/mc mirror --overwrite src/backups dst/<your-offsite-bucket>
+```
+
+**Option B — point the backup service directly at external S3**: change the `STORAGE`/`WORKSPACE_STORAGE` env on the `backup` and `backup-api` services to your external provider and pre-create the `backups` bucket there. Backups then never touch the local disk.
+
+Whichever you choose, also ship the `pg_dump` output offsite — the Huly backup covers workspace data, but a plain database dump is the cheapest insurance for the account/global tables.
+
+---
+
 ## Known Limitations & Gotchas
 
 1. **No v0.7 `backup-all-to-dir` command** -- the v0.6 bulk command doesn't exist in v0.7. Use `backup <dir> <workspace>` per workspace.

@@ -18,7 +18,9 @@
 #   GHCR token needs the `write:packages` scope.
 #
 # Uses skopeo when available (copies all architectures without local disk),
-# otherwise falls back to docker pull/tag/push.
+# otherwise falls back to docker pull/tag/push. Strongly prefer skopeo:
+# the docker fallback needs ~2 GB of free space in /var/lib/docker (images are
+# removed after each push), and only copies the host architecture.
 #
 # After mirroring, point a deployment at the mirror by setting:
 #   HULY_IMAGE_PREFIX=ghcr.io/youruser/huly
@@ -102,7 +104,13 @@ for src in $IMAGES; do
   if [ "$USE_SKOPEO" = true ]; then
     skopeo copy --all "docker://${src_ref}" "docker://${dst}" || FAILED="${FAILED} ${src}"
   else
-    { docker pull "$src" && docker tag "$src" "$dst" && docker push "$dst"; } || FAILED="${FAILED} ${src}"
+    # Remove each image locally after pushing — the full stack unpacks to 15-20 GB
+    # and fills /var/lib/docker (or the Docker Desktop VM disk) otherwise.
+    if { docker pull "$src" && docker tag "$src" "$dst" && docker push "$dst"; }; then
+      docker rmi "$dst" "$src" >/dev/null 2>&1 || true
+    else
+      FAILED="${FAILED} ${src}"
+    fi
   fi
 done
 
